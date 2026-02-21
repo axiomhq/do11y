@@ -5,8 +5,10 @@
  * generator or docs framework including Mintlify, Docusaurus, Nextra,
  * GitBook, MkDocs Material, VitePress, and plain HTML.
  * 
- * Defaults are configured for Mintlify. To adapt to another framework,
- * update the "Framework-specific selectors" section in the config object.
+ * Set the `framework` config option to your docs framework. Supported
+ * values: 'mintlify', 'docusaurus', 'nextra', 'gitbook', 'mkdocs-material',
+ * 'vitepress'. Set to 'custom' and provide your own selectors if your
+ * framework is not listed.
  *
  * This script collects anonymous usage data without:
  * - Cookies (uses sessionStorage only - cleared when browser closes)
@@ -22,6 +24,7 @@
  * <meta name="axiom-do11y-domain" content="axiom-domain">
  * <meta name="axiom-do11y-token" content="api-token">
  * <meta name="axiom-do11y-dataset" content="dataset-name">
+ * <meta name="axiom-do11y-framework" content="mintlify">
  */
 
 (function() {
@@ -67,36 +70,109 @@
     retryDelay: 1000,
     // Rate limiting: minimum milliseconds between events of the same type
     rateLimitMs: 100,
-    // ---- Framework-specific selectors ----
-    // The selectors below default to Mintlify. Adapt them to your docs
-    // framework by uncommenting or replacing with the appropriate values.
-    //
-    // CSS selector for the search trigger element(s)
-    //   Mintlify:        '#search-bar-entry, #search-bar-entry-mobile, [class*="search"]'
-    //   Docusaurus:      '.DocSearch, .DocSearch-Button'
-    //   Nextra:          '.nextra-search input'
-    //   GitBook:         '[data-testid="search"]'
-    //   MkDocs Material: '.md-search__input'
-    //   VitePress:       '.VPNavBarSearch button, #local-search'
-    searchSelector: '#search-bar-entry, #search-bar-entry-mobile, [class*="search"]',
-    // CSS selector for "copy code" buttons
-    //   Mintlify:        '[class*="copy"], button[aria-label*="copy" i]'
-    //   Docusaurus:      '.clean-btn[class*="copy"], button[class*="copyButton"]'
-    //   Nextra:          'button[class*="copy"]'
-    //   MkDocs Material: '.md-clipboard'
-    //   VitePress:       '.vp-code-copy'
-    copyButtonSelector: '[class*="copy"], button[aria-label*="copy" i]',
-    // CSS selector for code block containers (parent of copy button)
-    //   Works across most frameworks as-is. Adjust if your framework
-    //   uses a non-standard wrapper around code blocks.
-    codeBlockSelector: 'pre, [class*="code"]',
-    // CSS selectors for page regions used in link context detection.
-    // These use semantic HTML elements plus common class-name patterns
-    // and should work with most frameworks without changes.
-    navigationSelector: 'nav, [role="navigation"], #navbar, #sidebar, [class*="nav"], [class*="sidebar"]',
-    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
-    contentSelector: 'main, article, [role="main"], [class*="content"]',
+    // ---- Documentation framework ----
+    // Set to your docs framework to auto-configure element selectors.
+    // Supported: 'mintlify', 'docusaurus', 'nextra', 'gitbook',
+    //            'mkdocs-material', 'vitepress'
+    // Set to 'custom' and provide your own selectors below.
+    framework: 'mintlify',
+    // ---- Custom selectors (only used when framework is 'custom') ----
+    // Override individual selectors when using a non-listed framework.
+    searchSelector: null,
+    copyButtonSelector: null,
+    codeBlockSelector: null,
+    navigationSelector: null,
+    footerSelector: null,
+    contentSelector: null,
   };
+
+  // ============================================================
+  // Framework Selector Presets
+  // ============================================================
+
+  const FRAMEWORK_PRESETS = {
+    mintlify: {
+      searchSelector: '#search-bar-entry, #search-bar-entry-mobile, [class*="search"]',
+      copyButtonSelector: '[class*="copy"], button[aria-label*="copy" i]',
+      codeBlockSelector: 'pre, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], #navbar, #sidebar, [class*="nav"], [class*="sidebar"]',
+      footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+      contentSelector: 'main, article, [role="main"], [class*="content"]',
+    },
+    docusaurus: {
+      searchSelector: '.DocSearch, .DocSearch-Button',
+      copyButtonSelector: '.clean-btn[class*="copy"], button[class*="copyButton"]',
+      codeBlockSelector: 'pre, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], .navbar, .sidebar, [class*="nav"], [class*="sidebar"]',
+      footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+      contentSelector: 'main, article, [role="main"], [class*="content"]',
+    },
+    nextra: {
+      searchSelector: '.nextra-search input',
+      copyButtonSelector: 'button[class*="copy"]',
+      codeBlockSelector: 'pre, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
+      footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+      contentSelector: 'main, article, [role="main"], [class*="content"]',
+    },
+    gitbook: {
+      searchSelector: '[data-testid="search"]',
+      copyButtonSelector: '[class*="copy"], button[aria-label*="copy" i]',
+      codeBlockSelector: 'pre, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
+      footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+      contentSelector: 'main, article, [role="main"], [class*="content"]',
+    },
+    'mkdocs-material': {
+      searchSelector: '.md-search__input',
+      copyButtonSelector: '.md-clipboard',
+      codeBlockSelector: 'pre, code, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], .md-nav, .md-sidebar',
+      footerSelector: 'footer, [role="contentinfo"], .md-footer',
+      contentSelector: 'main, article, [role="main"], .md-content',
+    },
+    vitepress: {
+      searchSelector: '.VPNavBarSearch button, #local-search',
+      copyButtonSelector: '.vp-code-copy',
+      codeBlockSelector: 'pre, [class*="code"]',
+      navigationSelector: 'nav, [role="navigation"], .VPNav, .VPSidebar, [class*="nav"], [class*="sidebar"]',
+      footerSelector: 'footer, [role="contentinfo"], .VPFooter, [class*="footer"]',
+      contentSelector: 'main, article, [role="main"], .VPContent, [class*="content"]',
+    },
+  };
+
+  /**
+   * Apply framework-specific selectors to the config.
+   * For 'custom', uses whatever the user set in config; for named
+   * frameworks, loads the preset and lets explicit config values override.
+   */
+  function applyFrameworkSelectors() {
+    var selectorKeys = [
+      'searchSelector', 'copyButtonSelector', 'codeBlockSelector',
+      'navigationSelector', 'footerSelector', 'contentSelector',
+    ];
+    var preset = FRAMEWORK_PRESETS[config.framework];
+
+    if (preset) {
+      selectorKeys.forEach(function(key) {
+        config[key] = config[key] || preset[key];
+      });
+    } else if (config.framework !== 'custom') {
+      if (config.debug) {
+        console.warn(
+          '[Axiom Do11y] Unknown framework "' + config.framework + '". ' +
+          'Falling back to generic selectors. Supported: ' +
+          Object.keys(FRAMEWORK_PRESETS).join(', ') + ', custom'
+        );
+      }
+    }
+
+    // Fallback for any selector still unset (covers 'custom' with partial overrides)
+    var fallback = FRAMEWORK_PRESETS.mintlify;
+    selectorKeys.forEach(function(key) {
+      if (!config[key]) config[key] = fallback[key];
+    });
+  }
 
   // ============================================================
   // Security & Privacy Checks
@@ -927,11 +1003,21 @@
       }
     }
 
+    // Check for framework override
+    var metaFramework = document.querySelector('meta[name="axiom-do11y-framework"]');
+    if (metaFramework) {
+      config.framework = metaFramework.getAttribute('content');
+    }
+
+    // Resolve framework-specific selectors
+    applyFrameworkSelectors();
+
     if (config.debug) {
       console.log('[Axiom Do11y] Initializing with config:', {
         endpoint: config['axiom-domain'],
         dataset: config['dataset-name'],
         hasToken: !!config['api-token'],
+        framework: config.framework,
         allowedDomains: config.allowedDomains,
         respectDNT: config.respectDNT,
       });
