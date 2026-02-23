@@ -123,7 +123,11 @@ AxiomDo11y.version        // Script version
 
 ## Tests
 
-The `test/` directory contains a test suite (`test-live-sites.js`). It runs headless Chromium via Puppeteer against real documentation sites to validate selectors in production.
+The `test/` directory contains two layers of testing.
+
+### Selector tests against live sites (`test/test-live-sites.js`)
+
+Runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production.
 
 ```bash
 cd test
@@ -142,6 +146,65 @@ Sites tested:
 | GitBook | https://docs.gitbook.com/content-creation/blocks/code-block |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
+
+### Integration tests (`test/integration/`)
+
+End-to-end tests that install each supported framework, inject `do11y.js`, start a local dev server, drive user interactions via Puppeteer, and then query the Axiom API to verify that events arrived correctly.
+
+```bash
+cd test/integration
+npm install
+npx puppeteer browsers install chrome
+```
+
+Run the full suite:
+
+```bash
+AXIOM_DOMAIN=api.axiom.co \
+AXIOM_TOKEN=xaat-your-token \
+AXIOM_DATASET=do11y-integration-test \
+node run.js
+```
+
+The token needs both **ingest** and **query** permissions on the target dataset.
+
+Run a subset of frameworks:
+
+```bash
+AXIOM_DOMAIN=api.axiom.co \
+AXIOM_TOKEN=xaat-your-token \
+AXIOM_DATASET=do11y-integration-test \
+FRAMEWORKS=mintlify,vitepress \
+node run.js
+```
+
+Skip dependency installation on repeat runs:
+
+```bash
+SKIP_INSTALL=1 AXIOM_DOMAIN=… AXIOM_TOKEN=… AXIOM_DATASET=… node run.js
+```
+
+**Frameworks tested:**
+
+| Name | Type | Port | Notes |
+|---|---|---|---|
+| `mintlify` | npm (Mintlify CLI) | 4005 | Full framework install |
+| `gitbook` | Static HTML | 4006 | Static mock — GitBook is cloud-only with no local CLI |
+| `docusaurus` | npm (Docusaurus 3) | 4001 | Full framework install |
+| `nextra` | npm (Next.js + Nextra 3) | 4002 | Full framework install |
+| `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
+| `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python; skipped if unavailable |
+
+**Events validated per framework:**
+
+| Event | Minimum expected |
+|---|---|
+| `page_view` | 2 (start page + guide page) |
+| `scroll_depth` | 1 |
+| `link_click` | 1 |
+| `page_exit` | 1 |
+| `search_opened` | 0 (best-effort) |
+| `code_copied` | 0 (best-effort) |
 
 ## Known limitations
 

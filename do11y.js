@@ -665,6 +665,8 @@
    * Track link clicks
    */
   function setupLinkTracking() {
+    // Use capture phase so the handler fires before SPA routers (VitePress,
+    // Docusaurus, Nextra, etc.) can call stopPropagation / stopImmediatePropagation.
     document.addEventListener('click', function(e) {
       const link = e.target.closest('a');
       if (!link) return;
@@ -712,11 +714,10 @@
         linkIndex: getLinkIndex(link, href),
       });
 
-      // Flush immediately for external links (page may unload)
-      if (linkType === 'external') {
-        flush();
-      }
-    });
+      // Flush immediately — external links may unload the page, and
+      // SPA routers may replace content before the scheduled flush fires
+      flush();
+    }, true);
   }
 
   /**

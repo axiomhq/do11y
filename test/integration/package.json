@@ -1,0 +1,11 @@
+{
+  "name": "do11y-integration-tests",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "dependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}
