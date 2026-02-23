@@ -1,0 +1,10 @@
+site_name: Do11y Test - MkDocs Material
+theme:
+  name: material
+  features:
+    - content.code.copy
+  custom_dir: overrides
+extra_javascript:
+  - do11y.js
+extra:
+  generator: false
