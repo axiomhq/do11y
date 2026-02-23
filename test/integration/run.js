@@ -9,8 +9,7 @@
  *   5. Queries the Axiom API to validate that the expected events arrived
  *
  * Required environment variables:
- *   AXIOM_DOMAIN      — Axiom ingest endpoint (e.g. us-east-1.aws.edge.axiom.co)
- *   AXIOM_API_DOMAIN  — Axiom API endpoint for queries (e.g. api.axiom.co)
+ *   AXIOM_DOMAIN      — Axiom domain (e.g. axiom.co or dev.axiomtestlabs.co)
  *   AXIOM_TOKEN       — API token with ingest + query permissions
  *   AXIOM_DATASET     — Dataset name (e.g. do11y-integration-test)
  *
@@ -25,7 +24,6 @@ const path = require('path');
 const http = require('http');
 
 const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN;
-const AXIOM_API_DOMAIN = process.env.AXIOM_API_DOMAIN;
 const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
 const AXIOM_DATASET = process.env.AXIOM_DATASET;
 const SKIP_INSTALL = process.env.SKIP_INSTALL === '1';
@@ -343,7 +341,7 @@ async function queryAxiom(testRunId, startTime) {
     endTime: new Date().toISOString(),
   });
 
-  const url = `https://${AXIOM_API_DOMAIN}/v1/datasets/_apl?format=tabular`;
+  const url = `https://${AXIOM_DOMAIN}/v1/query/_apl?format=tabular`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -420,8 +418,8 @@ function validateEvents(framework, events) {
 
 (async () => {
   // Validate env
-  if (!AXIOM_DOMAIN || !AXIOM_API_DOMAIN || !AXIOM_TOKEN || !AXIOM_DATASET) {
-    fail('Missing required env vars: AXIOM_DOMAIN, AXIOM_API_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET');
+  if (!AXIOM_DOMAIN || !AXIOM_TOKEN || !AXIOM_DATASET) {
+    fail('Missing required env vars: AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET');
     process.exit(1);
   }
 
