@@ -123,19 +123,12 @@ AxiomDo11y.version        // Script version
 
 ## Tests
 
-The `test/` directory contains two test suites.
-
-### Mock DOM tests (`test-frameworks.html`)
-
-Open `test/test-frameworks.html` in a browser. It builds mock DOM fragments for each supported framework and verifies that every selector matches at least one element. It also tests the `custom` framework with partial overrides and an unknown framework name (both should fall back to Mintlify defaults).
-
-### Live site tests (`test-live-sites.js`)
-
-Runs headless Chromium via Puppeteer against real documentation sites to validate selectors in production.
+The `test/` directory contains a test suite (`test-live-sites.js`). It runs headless Chromium via Puppeteer against real documentation sites to validate selectors in production.
 
 ```bash
 cd test
 npm install
+npx puppeteer browsers install chrome
 node test-live-sites.js
 ```
 
