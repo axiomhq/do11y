@@ -14,7 +14,9 @@
     aside.sidebar a { display: block; padding: 0.25rem 0; color: #111; text-decoration: none; }
     main { flex: 1; padding: 2rem; max-width: 720px; }
     footer { padding: 1rem 2rem; border-top: 1px solid #e5e7eb; text-align: center; color: #888; }
-    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+    .code-wrapper { position: relative; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 0; }
+    button.copy-button { position: absolute; top: 0.5rem; right: 0.5rem; background: #333; color: #fff; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
     h1, h2 { margin-top: 1.5rem; }
     p, ul { margin: 0.75rem 0; line-height: 1.6; }
     [data-testid="search-input"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; width: 100%; margin-bottom: 1rem; }
@@ -36,13 +38,19 @@
         <p>This page tests page views, link clicks, scroll depth, search, and code block interactions.</p>
 
         <h2>Getting started</h2>
-        <pre><code>npm install @example/sdk</code></pre>
-        <pre><code class="language-javascript">import { init } from '@example/sdk';
+        <div class="code-wrapper">
+          <button class="copy-button" aria-label="Copy code">Copy</button>
+          <pre><code>npm install @example/sdk</code></pre>
+        </div>
+        <div class="code-wrapper">
+          <button class="copy-button" aria-label="Copy code">Copy</button>
+          <pre><code class="language-javascript">import { init } from '@example/sdk';
 
 init({
   apiKey: 'your-api-key',
   environment: 'production',
 });</code></pre>
+        </div>
 
         <h2>Navigation</h2>
         <ul>

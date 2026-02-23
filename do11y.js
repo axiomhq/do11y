@@ -30,6 +30,11 @@
 (function() {
   'use strict';
 
+  // Prevent double-initialization in SPA frameworks (React strict mode,
+  // Next.js/Nextra re-renders, etc.) where the script tag may be re-evaluated.
+  if (window.__axiomDo11yInitialized) return;
+  window.__axiomDo11yInitialized = true;
+
   // ============================================================
   // Configuration
   // ============================================================
