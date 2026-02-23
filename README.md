@@ -26,7 +26,7 @@ No GDPR consent banner is required.
 ```html
 <meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
 <meta name="axiom-do11y-token" content="xaat-your-ingest-token">
-<meta name="axiom-do11y-dataset" content="docs-analytics">
+<meta name="axiom-do11y-dataset" content="do11y">
 <meta name="axiom-do11y-framework" content="mintlify">
 ```
 
@@ -107,6 +107,17 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 
 Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, `timezoneOffset`.
 
+## Example queries
+
+See [QUERIES.md](QUERIES.md) for APL queries to analyze your documentation, including:
+
+- Traffic sources and entry points
+- Page engagement and scroll completion
+- Where users get stuck (exit pages, low engagement)
+- Navigation patterns and user journeys
+- Link and CTA performance
+- Code block engagement
+
 ## JavaScript API
 
 Do11y exposes `window.AxiomDo11y` for debugging and integration:
@@ -146,6 +157,17 @@ Sites tested:
 | GitBook | https://docs.gitbook.com/content-creation/blocks/code-block |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
+
+### Query validation (`test/integration/test-queries.js`)
+
+Validates that all APL queries in [QUERIES.md](QUERIES.md) are syntactically correct by executing them against the Axiom API.
+
+```bash
+cd test/integration
+node test-queries.js
+```
+
+Uses the same `.env` credentials as the integration tests.
 
 ### Integration tests (`test/integration/`)
 
