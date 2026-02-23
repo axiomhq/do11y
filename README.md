@@ -157,31 +157,32 @@ npm install
 npx puppeteer browsers install chrome
 ```
 
-Run the full suite:
+Copy `test/integration/.env.example` to `test/integration/.env` and add your credentials:
 
-```bash
-AXIOM_DOMAIN=api.axiom.co \
-AXIOM_TOKEN=xaat-your-token \
-AXIOM_DATASET=do11y-integration-test \
-node run.js
+```
+AXIOM_DOMAIN=api.axiom.co
+AXIOM_TOKEN=xaat-your-token
+AXIOM_DATASET=do11y-integration-test
 ```
 
 The token needs both **ingest** and **query** permissions on the target dataset.
 
+Run the full suite:
+
+```bash
+npm test
+```
+
 Run a subset of frameworks:
 
 ```bash
-AXIOM_DOMAIN=api.axiom.co \
-AXIOM_TOKEN=xaat-your-token \
-AXIOM_DATASET=do11y-integration-test \
-FRAMEWORKS=mintlify,vitepress \
-node run.js
+FRAMEWORKS=mintlify,vitepress npm test
 ```
 
 Skip dependency installation on repeat runs:
 
 ```bash
-SKIP_INSTALL=1 AXIOM_DOMAIN=… AXIOM_TOKEN=… AXIOM_DATASET=… node run.js
+SKIP_INSTALL=1 npm test
 ```
 
 **Frameworks tested:**

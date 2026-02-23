@@ -1,6 +1,9 @@
 /**
  * Do11y integration test runner.
  *
+ * Loads AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET from .env in this directory.
+ * Run: npm test (or node run.js from this directory)
+ *
  * For each supported framework, this script:
  *   1. Scaffolds a minimal documentation site with do11y.js injected
  *   2. Starts the framework's dev server
@@ -8,15 +11,17 @@
  *   4. Waits for events to flush to Axiom
  *   5. Queries the Axiom API to validate that the expected events arrived
  *
- * Required environment variables:
+ * Required (set in .env in this directory):
  *   AXIOM_DOMAIN      — Axiom domain (e.g. axiom.co or dev.axiomtestlabs.co)
  *   AXIOM_TOKEN       — API token with ingest + query permissions
  *   AXIOM_DATASET     — Dataset name (e.g. do11y-integration-test)
  *
- * Optional:
+ * Optional (can override in .env or shell):
  *   FRAMEWORKS      — Comma-separated list of frameworks to test (default: all)
  *   SKIP_INSTALL    — Set to "1" to skip npm/pip install (deps already present)
  */
+
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
