@@ -215,8 +215,92 @@ const QUERY_EXPECTATIONS = {
       return null;
     },
   },
+  'Most-read sections': {
+    columns: ['path', 'heading', 'readers', 'avgDwell'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.readers !== 'number' || row.readers < 0) return 'readers should be a non-negative number';
+        if (row.avgDwell !== null && row.avgDwell < 0) return 'avgDwell should be non-negative';
+      }
+      return null;
+    },
+  },
+  'Skipped sections': {
+    columns: ['path', 'heading', 'readers', 'avgDwell'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.readers !== 'number' || row.readers < 0) return 'readers should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Most switched-to tabs': {
+    columns: ['tabLabel', 'switches'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.switches !== 'number' || row.switches < 0) return 'switches should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Tab switches by page': {
+    columns: ['path', 'tabLabel', 'tabGroup', 'switches'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.switches !== 'number' || row.switches < 0) return 'switches should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Most clicked TOC entries': {
+    columns: ['path', 'heading', 'clicks'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.clicks !== 'number' || row.clicks < 0) return 'clicks should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Pages with heavy TOC usage': {
+    columns: ['path', 'tocClicks', 'views', 'tocRate'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.views !== 'number' || row.views < 0) return 'views should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Feedback by page': {
+    columns: ['path', 'total', 'helpful', 'notHelpful', 'helpfulPct'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
+        if (typeof row.helpful !== 'number' || row.helpful < 0) return 'helpful should be a non-negative number';
+        if (typeof row.notHelpful !== 'number' || row.notHelpful < 0) return 'notHelpful should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Most expanded sections': {
+    columns: ['path', 'summary', 'expansions'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.expansions !== 'number' || row.expansions < 0) return 'expansions should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'Expand rate by page': {
+    columns: ['path', 'expands', 'views', 'expandRate'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.views !== 'number' || row.views < 0) return 'views should be a non-negative number';
+      }
+      return null;
+    },
+  },
   'Page performance dashboard': {
-    columns: ['path', 'pageViews', 'avgScrollDepth', 'avgTimeSeconds', 'linkClicks', 'codeCopies', 'searches', 'clicksPerView', 'copiesPerView'],
+    columns: ['path', 'pageViews', 'avgScrollDepth', 'avgTimeSeconds', 'linkClicks', 'codeCopies', 'searches', 'tocClicks', 'expands', 'clicksPerView', 'copiesPerView'],
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.path !== 'string') return 'path should be a string';

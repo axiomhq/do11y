@@ -24,6 +24,22 @@ init(
 )
 ```
 
+## FAQ
+
+<details>
+<summary>How do I install the SDK?</summary>
+
+Run `pip install example-sdk` in your project directory.
+
+</details>
+
+<details>
+<summary>What environments are supported?</summary>
+
+The SDK supports Python 3.9+ on Linux, macOS, and Windows.
+
+</details>
+
 ## Navigation
 
 - [Guide page](guide.md) — internal link for click tracking

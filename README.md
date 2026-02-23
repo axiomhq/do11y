@@ -1,6 +1,6 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. A single, dependency-free JavaScript file that tracks how people use your documentation — page views, scroll depth, link clicks, search usage, and code-block copies — and sends the data to [Axiom](https://axiom.co).
+Documentation observability for Axiom. A single, dependency-free JavaScript file that tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
 
 ## Privacy
 
@@ -55,6 +55,12 @@ All options live in the `config` object at the top of `do11y.js`.
 | `trackInternalLinks` | `true` | Track clicks on internal links. |
 | `trackScrollDepth` | `true` | Track scroll depth thresholds. |
 | `scrollThresholds` | `[25, 50, 75, 90]` | Scroll percentages to record. |
+| `trackSectionVisibility` | `true` | Track which headings users actually read (via IntersectionObserver). |
+| `sectionVisibleThreshold` | `3` | Minimum seconds a section must be visible before recording. |
+| `trackTabSwitches` | `true` | Track code language/framework tab switches. |
+| `trackTocClicks` | `true` | Track on-page table of contents clicks. |
+| `trackExpandCollapse` | `true` | Track expand/collapse interactions (details, accordions). |
+| `trackFeedback` | `true` | Track "Was this helpful?" feedback widget clicks. |
 | `allowedDomains` | `['ALLOWED_DOMAINS']` | Restrict which domains may send data. Set to `null` to allow any. |
 | `respectDNT` | `true` | Honor the browser's Do Not Track setting. |
 | `maxRetries` | `2` | Retry count for failed requests. |
@@ -93,6 +99,9 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `navigationSelector` | Navigation and sidebar regions. |
 | `footerSelector` | Page footer. |
 | `contentSelector` | Main content area. |
+| `tabContainerSelector` | Tab groups for code language/framework switching. |
+| `tocSelector` | On-page table of contents container. |
+| `feedbackSelector` | "Was this helpful?" feedback widget container. |
 
 ## Events collected
 
@@ -104,6 +113,11 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth` |
 | `search_opened` | User opens the search dialog (click or Cmd/Ctrl+K). | `trigger` |
 | `code_copied` | User clicks a code block's copy button. | `language`, `codeSection`, `codeBlockIndex` |
+| `section_visible` | A heading was visible in the viewport long enough to be read. | `heading`, `headingLevel`, `visibleSeconds` |
+| `tab_switch` | User switches a code language/framework tab. | `tabLabel`, `tabGroup`, `isDefault` |
+| `toc_click` | User clicks an entry in the on-page table of contents. | `heading`, `headingLevel`, `tocPosition` |
+| `feedback` | User clicks a "Was this helpful?" button. | `rating` |
+| `expand_collapse` | User toggles a `<details>` element or accordion. | `summary`, `action`, `section` |
 
 Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, `timezoneOffset`.
 

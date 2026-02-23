@@ -24,6 +24,22 @@ init({
 });
 ```
 
+## FAQ
+
+<details>
+<summary>How do I install the SDK?</summary>
+
+Run `npm install @example/sdk` in your project directory.
+
+</details>
+
+<details>
+<summary>What environments are supported?</summary>
+
+The SDK supports Node.js 18+ and all modern browsers.
+
+</details>
+
 ## Navigation
 
 - [Guide page](/guide) — internal link for click tracking

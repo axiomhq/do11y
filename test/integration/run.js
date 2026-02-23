@@ -282,7 +282,58 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 5. Click internal link to guide page (triggers link_click + page_view)
+  // 5. Expand a <details> element (triggers expand_collapse)
+  log('  → expand_collapse');
+  try {
+    const expanded = await page.evaluate(() => {
+      const details = document.querySelector('details:not([open])');
+      if (details) {
+        const summary = details.querySelector('summary');
+        if (summary) { summary.click(); return true; }
+      }
+      return false;
+    });
+    if (!expanded) warn('  ⚠ No <details> element found, skipping');
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 6. Click a TOC link (triggers toc_click)
+  log('  → toc_click');
+  try {
+    const tocClicked = await page.evaluate(() => {
+      const toc = document.querySelector(
+        '.table-of-contents, [class*="toc"], [class*="outline"], ' +
+        '[class*="TableOfContents"], .VPDocAsideOutline, ' +
+        '.md-sidebar--secondary .md-nav, aside.toc'
+      );
+      if (toc) {
+        const link = toc.querySelector('a[href^="#"]');
+        if (link) { link.click(); return true; }
+      }
+      return false;
+    });
+    if (!tocClicked) warn('  ⚠ No TOC element found, skipping');
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 7. Click feedback button (triggers feedback — only gitbook-mock has this)
+  log('  → feedback');
+  try {
+    const feedbackClicked = await page.evaluate(() => {
+      const container = document.querySelector(
+        '[class*="feedback"], [class*="helpful"], [data-feedback]'
+      );
+      if (container) {
+        const btn = container.querySelector('button[data-value], button');
+        if (btn) { btn.click(); return true; }
+      }
+      return false;
+    });
+    if (!feedbackClicked) warn('  ⚠ No feedback widget found, skipping');
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 8. Click internal link to guide page (triggers link_click + page_view)
   log('  → link_click (internal) + page_view (guide)');
   try {
     // Find the link and click it via Puppeteer's mouse (fires DOM click event
@@ -309,7 +360,7 @@ async function runInteractions(browser, baseUrl, fw) {
   }
   await sleep(1500);
 
-  // 6. Trigger page_exit by navigating away
+  // 9. Trigger page_exit by navigating away
   log('  → page_exit');
   await page.goto('about:blank');
   await sleep(1000);
@@ -392,10 +443,14 @@ async function queryAxiom(testRunId, startTime) {
 const EXPECTED_EVENTS = {
   page_view: { min: 2 },
   scroll_depth: { min: 1 },
-  search_opened: { min: 0 },    // best-effort
-  code_copied: { min: 0 },      // best-effort
+  search_opened: { min: 0 },        // best-effort
+  code_copied: { min: 0 },          // best-effort
   link_click: { min: 1 },
   page_exit: { min: 1 },
+  expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
+  toc_click: { min: 0 },            // best-effort — requires TOC in DOM
+  feedback: { min: 0 },             // best-effort — only gitbook-mock has widget
+  section_visible: { min: 0 },      // best-effort — requires 3s+ dwell on heading
 };
 
 function validateEvents(framework, events) {

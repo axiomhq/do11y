@@ -81,6 +81,25 @@
     //            'mkdocs-material', 'vitepress'
     // Set to 'custom' and provide your own selectors below.
     framework: 'mintlify',
+    // ---- Enhanced tracking ----
+    // Track which headings/sections are visible via IntersectionObserver
+    trackSectionVisibility: true,
+    // Minimum seconds a section must be visible before recording
+    sectionVisibleThreshold: 3,
+    // Track code language/framework tab switches
+    trackTabSwitches: true,
+    // Track on-page table of contents clicks
+    trackTocClicks: true,
+    // Track expand/collapse interactions (details, accordions)
+    trackExpandCollapse: true,
+    // Track "Was this helpful?" feedback widgets
+    trackFeedback: true,
+    // Selector for tab container elements
+    tabContainerSelector: null,
+    // Selector for TOC container
+    tocSelector: null,
+    // Selector for feedback widget container
+    feedbackSelector: null,
     // ---- Custom selectors (only used when framework is 'custom') ----
     // Override individual selectors when using a non-listed framework.
     searchSelector: null,
@@ -103,6 +122,9 @@
       navigationSelector: 'nav, [role="navigation"], #navbar, #sidebar, [class*="nav"], [class*="sidebar"]',
       footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
       contentSelector: 'main, article, [role="main"], [class*="content"]',
+      tabContainerSelector: '[role="tablist"], [class*="tab"]',
+      tocSelector: '[class*="table-of-contents"], [class*="toc"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"]',
     },
     docusaurus: {
       searchSelector: '.DocSearch, .DocSearch-Button',
@@ -111,6 +133,9 @@
       navigationSelector: 'nav, [role="navigation"], .navbar, .sidebar, [class*="nav"], [class*="sidebar"]',
       footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
       contentSelector: 'main, article, [role="main"], [class*="content"]',
+      tabContainerSelector: '.tabs[role="tablist"], [class*="tabs"]',
+      tocSelector: '.table-of-contents, [class*="toc"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"]',
     },
     nextra: {
       searchSelector: '.nextra-search input, input[placeholder*="search" i], button[aria-label*="search" i]',
@@ -119,6 +144,9 @@
       navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
       footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
       contentSelector: 'main, article, [role="main"], [class*="content"]',
+      tabContainerSelector: '[role="tablist"], [class*="tab"]',
+      tocSelector: '.nextra-toc, [class*="toc"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"]',
     },
     gitbook: {
       searchSelector: '[data-testid*="search"], button[aria-label*="search" i]',
@@ -127,6 +155,9 @@
       navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
       footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
       contentSelector: 'main, article, [role="main"], [class*="content"]',
+      tabContainerSelector: '[role="tablist"], [class*="tab"]',
+      tocSelector: '[class*="table-of-contents"], [class*="toc"], [class*="page-outline"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"], [class*="rating"]',
     },
     'mkdocs-material': {
       searchSelector: '.md-search__input',
@@ -135,6 +166,9 @@
       navigationSelector: 'nav, [role="navigation"], .md-nav, .md-sidebar',
       footerSelector: 'footer, [role="contentinfo"], .md-footer',
       contentSelector: 'main, article, [role="main"], .md-content',
+      tabContainerSelector: '.tabbed-labels, .md-typeset .tabbed-set',
+      tocSelector: '.md-sidebar--secondary .md-nav, [class*="toc"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"]',
     },
     vitepress: {
       searchSelector: '.VPNavBarSearch button, .VPNavBarSearchButton, #local-search',
@@ -143,6 +177,9 @@
       navigationSelector: 'nav, [role="navigation"], .VPNav, .VPSidebar, [class*="nav"], [class*="sidebar"]',
       footerSelector: 'footer, [role="contentinfo"], .VPFooter, [class*="footer"]',
       contentSelector: 'main, article, [role="main"], .VPContent, [class*="content"]',
+      tabContainerSelector: '.vp-code-group .tabs, [role="tablist"]',
+      tocSelector: '.VPDocAsideOutline, [class*="toc"]',
+      feedbackSelector: '[class*="feedback"], [class*="helpful"]',
     },
   };
 
@@ -155,6 +192,7 @@
     var selectorKeys = [
       'searchSelector', 'copyButtonSelector', 'codeBlockSelector',
       'navigationSelector', 'footerSelector', 'contentSelector',
+      'tabContainerSelector', 'tocSelector', 'feedbackSelector',
     ];
     var preset = FRAMEWORK_PRESETS[config.framework];
 
@@ -891,6 +929,9 @@
         if (depth > maxScroll) maxScroll = depth;
       });
 
+      // Flush section visibility data before exit
+      flushVisibleSections();
+
       queueEvent('page_exit', {
         totalTimeSeconds: Math.round(totalTime / 1000),
         activeTimeSeconds: Math.round(totalActiveTime / 1000),
@@ -969,6 +1010,265 @@
           codeBlockIndex: getCodeBlockIndex(codeBlock),
         });
       }
+    });
+  }
+
+  // ============================================================
+  // Section Visibility Tracking
+  // ============================================================
+
+  var sectionObserver = null;
+  var sectionTimers = {};
+
+  /**
+   * Track which headings/sections are actually read using IntersectionObserver.
+   */
+  function setupSectionVisibilityTracking() {
+    if (!config.trackSectionVisibility) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    var threshold = config.sectionVisibleThreshold * 1000;
+
+    sectionObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        var id = entry.target.getAttribute('data-do11y-section-id');
+        if (!id) return;
+
+        if (entry.isIntersecting) {
+          if (!sectionTimers[id]) {
+            sectionTimers[id] = { start: Date.now(), reported: false };
+          }
+        } else {
+          if (sectionTimers[id] && !sectionTimers[id].reported) {
+            var elapsed = Date.now() - sectionTimers[id].start;
+            if (elapsed >= threshold) {
+              var heading = entry.target.textContent.trim();
+              queueEvent('section_visible', {
+                heading: sanitizeText(heading, 100),
+                headingLevel: parseInt(entry.target.tagName.charAt(1), 10),
+                visibleSeconds: Math.round(elapsed / 1000),
+              });
+              sectionTimers[id].reported = true;
+            }
+          }
+          delete sectionTimers[id];
+        }
+      });
+    }, { threshold: 0.5 });
+
+    observeHeadings();
+  }
+
+  function observeHeadings() {
+    if (!sectionObserver) return;
+    var headings = document.querySelectorAll('h2, h3');
+    headings.forEach(function(h, i) {
+      if (!h.getAttribute('data-do11y-section-id')) {
+        h.setAttribute('data-do11y-section-id', 'section-' + i);
+      }
+      sectionObserver.observe(h);
+    });
+  }
+
+  /**
+   * Flush any sections still visible when the page unloads or SPA-navigates.
+   */
+  function flushVisibleSections() {
+    if (!sectionObserver) return;
+    var now = Date.now();
+    var threshold = config.sectionVisibleThreshold * 1000;
+    Object.keys(sectionTimers).forEach(function(id) {
+      var timer = sectionTimers[id];
+      if (timer && !timer.reported) {
+        var elapsed = now - timer.start;
+        if (elapsed >= threshold) {
+          var el = document.querySelector('[data-do11y-section-id="' + id + '"]');
+          if (el) {
+            queueEvent('section_visible', {
+              heading: sanitizeText(el.textContent.trim(), 100),
+              headingLevel: parseInt(el.tagName.charAt(1), 10),
+              visibleSeconds: Math.round(elapsed / 1000),
+            });
+          }
+        }
+      }
+    });
+    sectionTimers = {};
+  }
+
+  // ============================================================
+  // Tab Switch Tracking
+  // ============================================================
+
+  /**
+   * Track when users switch between language/framework tabs in code examples.
+   */
+  function setupTabSwitchTracking() {
+    if (!config.trackTabSwitches) return;
+
+    document.addEventListener('click', function(e) {
+      var baseSel = '[role="tab"], .tabs button, .tabs a, .tabbed-labels label';
+      if (config.tabContainerSelector) {
+        baseSel += ', ' + config.tabContainerSelector + ' button, ' +
+                   config.tabContainerSelector + ' a, ' +
+                   config.tabContainerSelector + ' label';
+      }
+      var tab = e.target.closest(baseSel);
+      if (!tab) return;
+
+      var isAlreadyActive = tab.getAttribute('aria-selected') === 'true' ||
+                            tab.classList.contains('active') ||
+                            tab.classList.contains('is-active');
+      if (isAlreadyActive) return;
+
+      var label = sanitizeText(tab.textContent, 50);
+      if (!label) return;
+
+      var section = sanitizeText(getNearestHeading(tab), 100);
+
+      queueEvent('tab_switch', {
+        tabLabel: label,
+        tabGroup: section,
+        isDefault: false,
+      });
+    });
+  }
+
+  // ============================================================
+  // TOC Click Tracking
+  // ============================================================
+
+  /**
+   * Track clicks on the on-page table of contents.
+   */
+  function setupTocClickTracking() {
+    if (!config.trackTocClicks) return;
+
+    document.addEventListener('click', function(e) {
+      var link = e.target.closest('a');
+      if (!link) return;
+
+      // Check if the link is inside a TOC container
+      var tocContainer = link.closest(
+        config.tocSelector ||
+        '.table-of-contents, [class*="toc"], [class*="outline"], ' +
+        '[class*="TableOfContents"], [class*="page-outline"]'
+      );
+      if (!tocContainer) return;
+
+      var href = link.getAttribute('href');
+      if (!href || !href.startsWith('#')) return;
+
+      // Find the target heading
+      var headingText = sanitizeText(link.textContent, 100);
+      var headingLevel = null;
+      try {
+        var targetId = href.slice(1);
+        var targetEl = document.getElementById(targetId);
+        if (targetEl && /^H[1-6]$/.test(targetEl.tagName)) {
+          headingLevel = parseInt(targetEl.tagName.charAt(1), 10);
+        }
+      } catch (e) { /* ignore */ }
+
+      // Determine position in the TOC list
+      var tocLinks = tocContainer.querySelectorAll('a[href^="#"]');
+      var tocPosition = 1;
+      for (var i = 0; i < tocLinks.length; i++) {
+        if (tocLinks[i] === link) { tocPosition = i + 1; break; }
+      }
+
+      queueEvent('toc_click', {
+        heading: headingText,
+        headingLevel: headingLevel,
+        tocPosition: tocPosition,
+      });
+    });
+  }
+
+  // ============================================================
+  // Feedback Tracking
+  // ============================================================
+
+  /**
+   * Track "Was this helpful?" feedback widget interactions.
+   */
+  function setupFeedbackTracking() {
+    if (!config.trackFeedback) return;
+
+    document.addEventListener('click', function(e) {
+      var button = e.target.closest(
+        'button, [role="button"], a'
+      );
+      if (!button) return;
+
+      // Check if inside a feedback widget
+      var feedbackContainer = button.closest(
+        config.feedbackSelector ||
+        '[class*="feedback"], [class*="helpful"], [class*="rating"], ' +
+        '[class*="was-this"], [data-feedback]'
+      );
+      if (!feedbackContainer) return;
+
+      // Determine the rating from the button's attributes or text
+      var buttonText = (button.textContent || '').trim().toLowerCase();
+      var ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+      var dataValue = button.getAttribute('data-value') || button.getAttribute('data-feedback');
+
+      var rating = null;
+      if (dataValue) {
+        rating = dataValue;
+      } else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + ' ' + ariaLabel)) {
+        rating = 'yes';
+      } else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + ' ' + ariaLabel)) {
+        rating = 'no';
+      }
+      if (!rating) return;
+
+      queueEvent('feedback', {
+        rating: rating,
+      });
+    });
+  }
+
+  // ============================================================
+  // Expand/Collapse Tracking
+  // ============================================================
+
+  /**
+   * Track expand/collapse interactions on details elements and accordions.
+   */
+  function setupExpandCollapseTracking() {
+    if (!config.trackExpandCollapse) return;
+
+    // Native <details> elements
+    document.addEventListener('toggle', function(e) {
+      var details = e.target;
+      if (details.tagName !== 'DETAILS') return;
+
+      var summary = details.querySelector('summary');
+      var label = sanitizeText(summary ? summary.textContent : '', 100);
+
+      queueEvent('expand_collapse', {
+        summary: label,
+        action: details.open ? 'expand' : 'collapse',
+        section: sanitizeText(getNearestHeading(details), 100),
+      });
+    }, true);
+
+    // Accordion-style elements controlled by aria-expanded
+    document.addEventListener('click', function(e) {
+      var trigger = e.target.closest('[aria-expanded], [class*="accordion"] button, [class*="collapsible"] button');
+      if (!trigger) return;
+      // Skip native <details> — handled above
+      if (trigger.closest('details')) return;
+
+      var wasExpanded = trigger.getAttribute('aria-expanded') === 'true';
+
+      queueEvent('expand_collapse', {
+        summary: sanitizeText(trigger.textContent, 100),
+        action: wasExpanded ? 'collapse' : 'expand',
+        section: sanitizeText(getNearestHeading(trigger), 100),
+      });
     });
   }
 
@@ -1053,6 +1353,11 @@
     setupEngagementTracking();
     setupSearchTracking();
     setupCopyTracking();
+    setupSectionVisibilityTracking();
+    setupTabSwitchTracking();
+    setupTocClickTracking();
+    setupFeedbackTracking();
+    setupExpandCollapseTracking();
 
     // Handle SPA navigation (works with any client-side router via MutationObserver)
     var lastPath = window.location.pathname;
@@ -1061,6 +1366,8 @@
     mutationObserver = new MutationObserver(function() {
       if (window.location.pathname !== lastPath) {
         lastPath = window.location.pathname;
+        // Flush section visibility data for the leaving page
+        flushVisibleSections();
         // Reset scroll tracking for new page
         trackedScrollDepths = new Set();
         pageLoadTime = Date.now();
@@ -1068,6 +1375,8 @@
         totalActiveTime = 0;
         // Track new page view
         trackPageView();
+        // Re-observe headings on the new page
+        observeHeadings();
       }
     });
 
@@ -1080,11 +1389,13 @@
     window.addEventListener('popstate', function() {
       if (window.location.pathname !== lastPath) {
         lastPath = window.location.pathname;
+        flushVisibleSections();
         trackedScrollDepths = new Set();
         pageLoadTime = Date.now();
         lastActivityTime = Date.now();
         totalActiveTime = 0;
         trackPageView();
+        observeHeadings();
       }
     });
 
@@ -1100,6 +1411,11 @@
     if (mutationObserver) {
       mutationObserver.disconnect();
       mutationObserver = null;
+    }
+    if (sectionObserver) {
+      flushVisibleSections();
+      sectionObserver.disconnect();
+      sectionObserver = null;
     }
     if (flushTimeout) {
       clearTimeout(flushTimeout);

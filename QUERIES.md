@@ -270,6 +270,142 @@ Find pages with the most code block engagement.
 | take 30
 ```
 
+## Section reading patterns
+
+### Most-read sections
+
+Find which headings users actually spend time reading.
+
+```apl
+['do11y']
+| where eventType == 'section_visible'
+| summarize
+    readers = dcount(sessionId),
+    avgDwell = avg(visibleSeconds)
+  by path, heading
+| order by readers desc
+| take 30
+```
+
+### Skipped sections
+
+Identify sections that users scroll past without reading.
+
+```apl
+['do11y']
+| where eventType == 'section_visible'
+| summarize
+    readers = dcount(sessionId),
+    avgDwell = avg(visibleSeconds)
+  by path, heading
+| where avgDwell < 5
+| order by readers desc
+```
+
+## Tab switch patterns
+
+### Most switched-to tabs
+
+See which code language or framework tabs users select.
+
+```apl
+['do11y']
+| where eventType == 'tab_switch' and isDefault == false
+| summarize switches = count() by tabLabel
+| order by switches desc
+```
+
+### Tab switches by page
+
+Understand audience preferences on specific pages.
+
+```apl
+['do11y']
+| where eventType == 'tab_switch'
+| summarize switches = count() by path, tabLabel, tabGroup
+| order by switches desc
+| take 30
+```
+
+## Table of contents usage
+
+### Most clicked TOC entries
+
+Find the headings users jump to via the on-page TOC.
+
+```apl
+['do11y']
+| where eventType == 'toc_click'
+| summarize clicks = count() by path, heading
+| order by clicks desc
+| take 30
+```
+
+### Pages with heavy TOC usage
+
+Identify pages where users rely on the TOC (potential length or organization issues).
+
+```apl
+['do11y']
+| where eventType in ('toc_click', 'page_view')
+| summarize
+    tocClicks = countif(eventType == 'toc_click'),
+    views = countif(eventType == 'page_view')
+  by path
+| where views > 10
+| extend tocRate = round(100.0 * tocClicks / views, 1)
+| order by tocRate desc
+```
+
+## User feedback
+
+### Feedback by page
+
+See which pages get the best and worst ratings.
+
+```apl
+['do11y']
+| where eventType == 'feedback'
+| summarize
+    total = count(),
+    helpful = countif(rating == 'yes'),
+    notHelpful = countif(rating == 'no')
+  by path
+| extend helpfulPct = round(helpful * 100.0 / total, 1)
+| where total >= 3
+| order by helpfulPct asc
+```
+
+## Expand/collapse patterns
+
+### Most expanded sections
+
+Find the `<details>` and accordion content users most want to see.
+
+```apl
+['do11y']
+| where eventType == 'expand_collapse' and action == 'expand'
+| summarize expansions = count() by path, summary
+| order by expansions desc
+| take 30
+```
+
+### Expand rate by page
+
+Identify pages where users frequently expand hidden content.
+
+```apl
+['do11y']
+| where eventType in ('expand_collapse', 'page_view')
+| summarize
+    expands = countif(eventType == 'expand_collapse' and action == 'expand'),
+    views = countif(eventType == 'page_view')
+  by path
+| where views > 10
+| extend expandRate = round(100.0 * expands / views, 1)
+| order by expandRate desc
+```
+
 ## Content performance comparison
 
 ### Page performance dashboard
@@ -284,7 +420,9 @@ Get a comprehensive view of all pages.
     avgTimeSeconds = avgif(activeTimeSeconds, eventType == 'page_exit'),
     linkClicks = countif(eventType == 'link_click'),
     codeCopies = countif(eventType == 'code_copied'),
-    searches = countif(eventType == 'search_opened')
+    searches = countif(eventType == 'search_opened'),
+    tocClicks = countif(eventType == 'toc_click'),
+    expands = countif(eventType == 'expand_collapse')
   by path
 | where pageViews > 10
 | extend 
@@ -372,3 +510,7 @@ Understand your audience's browser preferences.
 | Pages per session | > 3 | 1 (bounce) |
 | Search rate after page view | Low | High (confusion) |
 | Exit rate | Low on guides | High on intro pages |
+| TOC click rate | Low (well-organized) | High (page too long) |
+| Feedback helpful % | > 80% | < 50% |
+| Expand rate | Moderate | Very high (promote content) |
+| Section avg dwell | > 10s | < 3s (skipped) |
