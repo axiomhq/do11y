@@ -1,0 +1,10 @@
+{
+  "name": "do11y-test-gitbook",
+  "private": true,
+  "scripts": {
+    "build": "honkit build"
+  },
+  "devDependencies": {
+    "honkit": "^6.1.6"
+  }
+}

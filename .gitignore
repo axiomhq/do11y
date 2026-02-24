@@ -18,3 +18,4 @@ dist/
 .next/
 .docusaurus/
 .vitepress/
+_book/

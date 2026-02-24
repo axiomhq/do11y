@@ -53,11 +53,13 @@ const FRAMEWORKS = {
   gitbook: {
     port: 4006,
     type: 'static',
-    staticDir: path.join(SITES_DIR, 'gitbook-mock'),
-    do11yDest: path.join(SITES_DIR, 'gitbook-mock', 'do11y.js'),
+    dir: path.join(SITES_DIR, 'gitbook'),
+    staticDir: path.join(SITES_DIR, 'gitbook', '_book'),
+    do11yDest: path.join(SITES_DIR, 'gitbook', '_book', 'do11y.js'),
+    buildCmd: 'npx honkit build',
+    injectDo11y: true,
     startPage: '/',
     guidePage: '/guide.html',
-    note: 'Static mock — GitBook is cloud-only with no local CLI',
   },
   docusaurus: {
     port: 4001,
@@ -126,6 +128,25 @@ function patchDo11y(destPath, framework, testRunId) {
   const dir = path.dirname(destPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(destPath, src);
+}
+
+function injectDo11yTags(dir) {
+  const entries = fs.readdirSync(dir, { recursive: true });
+  for (const entry of entries) {
+    const rel = String(entry);
+    if (!rel.endsWith('.html')) continue;
+    const filePath = path.join(dir, rel);
+    let html = fs.readFileSync(filePath, 'utf8');
+    if (html.includes('do11y.js')) continue;
+    const tags = [
+      '<meta name="axiom-do11y-framework" content="gitbook">',
+      '<meta name="axiom-do11y-debug" content="true">',
+      '<meta name="axiom-do11y-domains" content="localhost">',
+      '<script src="/do11y.js" defer></script>',
+    ].join('\n    ');
+    html = html.replace('</head>', `    ${tags}\n</head>`);
+    fs.writeFileSync(filePath, html);
+  }
 }
 
 function waitForServer(port, timeoutMs = 180000) {
@@ -316,7 +337,7 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 7. Click feedback button (triggers feedback — only gitbook-mock has this)
+  // 7. Click feedback button (triggers feedback — only gitbook has this)
   log('  → feedback');
   try {
     const feedbackClicked = await page.evaluate(() => {
@@ -373,9 +394,34 @@ async function autoScroll(page) {
     return new Promise((resolve) => {
       const distance = 200;
       const delay = 80;
+
+      // Some frameworks (GitBook/HonKit) use container-based scrolling.
+      // Find the scrollable container so we scroll it instead of the window.
+      let container = null;
+      const contentEl = document.querySelector('[role="main"], main, article');
+      if (contentEl) {
+        let el = contentEl;
+        while (el && el !== document.body && el !== document.documentElement) {
+          const style = window.getComputedStyle(el);
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+              el.scrollHeight > el.clientHeight) {
+            container = el;
+            break;
+          }
+          el = el.parentElement;
+        }
+      }
+
+      const getPos = () => container ? container.scrollTop : window.scrollY;
+      const getMax = () => container
+        ? container.scrollHeight - container.clientHeight
+        : document.body.scrollHeight - window.innerHeight;
+
       const timer = setInterval(() => {
-        window.scrollBy(0, distance);
-        if (window.scrollY + window.innerHeight >= document.body.scrollHeight) {
+        if (container) { container.scrollTop += distance; }
+        else { window.scrollBy(0, distance); }
+
+        if (getPos() >= getMax() - 1) {
           clearInterval(timer);
           resolve();
         }
@@ -449,7 +495,7 @@ const EXPECTED_EVENTS = {
   page_exit: { min: 1 },
   expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
   toc_click: { min: 0 },            // best-effort — requires TOC in DOM
-  feedback: { min: 0 },             // best-effort — only gitbook-mock has widget
+  feedback: { min: 0 },             // best-effort — only gitbook has widget
   section_visible: { min: 0 },      // best-effort — requires 3s+ dwell on heading
 };
 
@@ -522,15 +568,37 @@ function validateEvents(framework, events) {
     // Clean stale build caches that cause 500 errors on cold start
     const fwDir = fw.dir || fw.staticDir;
     if (fwDir) {
-      for (const cache of ['.next', '.vitepress/cache', '.vitepress/dist']) {
+      for (const cache of ['.next', '.vitepress/cache', '.vitepress/dist', '_book']) {
         const cacheDir = path.join(fwDir, cache);
         if (fs.existsSync(cacheDir)) fs.rmSync(cacheDir, { recursive: true, force: true });
+      }
+    }
+
+    // 0b. Build step for static sites that require it (e.g. HonKit)
+    if (fw.buildCmd && fw.dir) {
+      try {
+        if (!SKIP_INSTALL && !fs.existsSync(path.join(fw.dir, 'node_modules'))) {
+          log('  Installing npm dependencies…');
+          execSync('npm install', { cwd: fw.dir, stdio: 'pipe' });
+        }
+        log('  Building…');
+        execSync(fw.buildCmd, { cwd: fw.dir, stdio: 'pipe' });
+      } catch (err) {
+        warn(`  Skipping ${name}: build failed (${err.message})`);
+        results[name] = { skipped: true, reason: err.message };
+        continue;
       }
     }
 
     // 1. Patch and deploy do11y.js
     log('  Patching do11y.js…');
     patchDo11y(fw.do11yDest, name, testRunId);
+
+    // 1b. Inject do11y meta/script tags into pre-built HTML
+    if (fw.injectDo11y && fw.staticDir) {
+      log('  Injecting do11y tags into HTML…');
+      injectDo11yTags(fw.staticDir);
+    }
 
     // 2. Start server
     let server;

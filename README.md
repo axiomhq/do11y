@@ -226,7 +226,7 @@ SKIP_INSTALL=1 npm test
 | Name | Type | Port | Notes |
 |---|---|---|---|
 | `mintlify` | npm (Mintlify CLI) | 4005 | Full framework install |
-| `gitbook` | Static HTML | 4006 | Static mock — GitBook is cloud-only with no local CLI |
+| `gitbook` | npm (HonKit) + static serve | 4006 | Built with HonKit (GitBook OSS fork), served as static HTML |
 | `docusaurus` | npm (Docusaurus 3) | 4001 | Full framework install |
 | `nextra` | npm (Next.js + Nextra 3) | 4002 | Full framework install |
 | `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
