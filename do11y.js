@@ -843,16 +843,46 @@
   // ============================================================
 
   let trackedScrollDepths = new Set();
+  let scrollContainer = null; // non-window scrollable ancestor, if any
 
   /**
-   * Track scroll depth
+   * Walk up from `el` to find the nearest ancestor that scrolls vertically.
+   */
+  function findScrollableAncestor(el) {
+    var current = el;
+    while (current && current !== document.body && current !== document.documentElement) {
+      var style = window.getComputedStyle(current);
+      var overflowY = style.overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') &&
+          current.scrollHeight > current.clientHeight) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  /**
+   * Track scroll depth.
+   *
+   * Some frameworks (GitBook/HonKit, MkDocs Material) use container-based
+   * scrolling where the window itself never scrolls. We detect the scrollable
+   * container by walking up from the content element and listen on it in
+   * addition to the window.
    */
   function setupScrollTracking() {
     if (!config.trackScrollDepth) return;
 
-    let ticking = false;
+    // Detect the scrollable container via the content selector
+    if (config.contentSelector) {
+      var contentEl = document.querySelector(config.contentSelector);
+      if (contentEl) {
+        scrollContainer = findScrollableAncestor(contentEl);
+      }
+    }
 
-    window.addEventListener('scroll', function() {
+    let ticking = false;
+    function onScroll() {
       if (!ticking) {
         window.requestAnimationFrame(function() {
           checkScrollDepth();
@@ -860,18 +890,38 @@
         });
         ticking = true;
       }
-    });
+    }
+
+    window.addEventListener('scroll', onScroll);
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', onScroll);
+      if (config.debug) {
+        console.log('[do11y] Using container-based scroll tracking:', scrollContainer.className || scrollContainer.tagName);
+      }
+    }
   }
 
   /**
-   * Check and track scroll depth thresholds
+   * Check and track scroll depth thresholds.
+   * Reads from the detected scroll container when present, otherwise
+   * falls back to the window/document.
    */
   function checkScrollDepth() {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    
+    var scrollTop, totalHeight, viewportHeight;
+
+    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+      scrollTop = scrollContainer.scrollTop;
+      totalHeight = scrollContainer.scrollHeight;
+      viewportHeight = scrollContainer.clientHeight;
+    } else {
+      scrollTop = window.scrollY || document.documentElement.scrollTop;
+      totalHeight = document.documentElement.scrollHeight;
+      viewportHeight = window.innerHeight;
+    }
+
+    const docHeight = totalHeight - viewportHeight;
     if (docHeight <= 0) return;
-    
+
     const scrollPercent = Math.round((scrollTop / docHeight) * 100);
 
     config.scrollThresholds.forEach(function(threshold) {
