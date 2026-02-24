@@ -66,7 +66,7 @@
     scrollThresholds: [25, 50, 75, 90],
     // Allowed domains - restrict where this script can send data from
     // Set to null to allow any domain, or ['docs.example.com'] to restrict
-    allowedDomains: ['ALLOWED_DOMAINS'],
+    allowedDomains: null,
     // Respect Do Not Track browser setting
     respectDNT: true,
     // Maximum retries for failed requests
