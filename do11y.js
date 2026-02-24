@@ -899,12 +899,20 @@
         console.log('[do11y] Using container-based scroll tracking:', scrollContainer.className || scrollContainer.tagName);
       }
     }
+
+    // Run once on init so short pages that fit in the viewport get
+    // recorded immediately (no scroll event will ever fire for them).
+    checkScrollDepth();
   }
 
   /**
    * Check and track scroll depth thresholds.
    * Reads from the detected scroll container when present, otherwise
    * falls back to the window/document.
+   *
+   * If the page fits entirely in the viewport (no scrollbar), all
+   * thresholds are marked as reached since the user can see 100% of
+   * the content without scrolling.
    */
   function checkScrollDepth() {
     var scrollTop, totalHeight, viewportHeight;
@@ -920,7 +928,20 @@
     }
 
     const docHeight = totalHeight - viewportHeight;
-    if (docHeight <= 0) return;
+
+    // Page fits in viewport — user can see all content without scrolling
+    if (docHeight <= 0) {
+      config.scrollThresholds.forEach(function(threshold) {
+        if (!trackedScrollDepths.has(threshold)) {
+          trackedScrollDepths.add(threshold);
+          queueEvent('scroll_depth', {
+            threshold: threshold,
+            scrollPercent: 100,
+          });
+        }
+      });
+      return;
+    }
 
     const scrollPercent = Math.round((scrollTop / docHeight) * 100);
 
@@ -945,6 +966,33 @@
   let isPageVisible = true;
 
   /**
+   * Emit a page_exit event with engagement and scroll data for the
+   * current page. Called on SPA route changes and beforeunload.
+   */
+  function emitPageExit() {
+    if (isPageVisible) {
+      totalActiveTime += Date.now() - lastActivityTime;
+    }
+
+    var totalTime = Date.now() - pageLoadTime;
+    var engagementRatio = totalTime > 0 ? totalActiveTime / totalTime : 0;
+
+    var maxScroll = 0;
+    trackedScrollDepths.forEach(function(depth) {
+      if (depth > maxScroll) maxScroll = depth;
+    });
+
+    flushVisibleSections();
+
+    queueEvent('page_exit', {
+      totalTimeSeconds: Math.round(totalTime / 1000),
+      activeTimeSeconds: Math.round(totalActiveTime / 1000),
+      engagementRatio: Math.round(engagementRatio * 100) / 100,
+      maxScrollDepth: maxScroll,
+    });
+  }
+
+  /**
    * Track user activity for engagement time
    */
   function setupEngagementTracking() {
@@ -965,31 +1013,7 @@
 
     // Track before unload to send final engagement data
     window.addEventListener('beforeunload', function() {
-      if (isPageVisible) {
-        totalActiveTime += Date.now() - lastActivityTime;
-      }
-
-      var totalTime = Date.now() - pageLoadTime;
-      // Prevent division by zero
-      var engagementRatio = totalTime > 0 ? totalActiveTime / totalTime : 0;
-      
-      // Safely get max scroll depth (Set spread may fail in old browsers)
-      var maxScroll = 0;
-      trackedScrollDepths.forEach(function(depth) {
-        if (depth > maxScroll) maxScroll = depth;
-      });
-
-      // Flush section visibility data before exit
-      flushVisibleSections();
-
-      queueEvent('page_exit', {
-        totalTimeSeconds: Math.round(totalTime / 1000),
-        activeTimeSeconds: Math.round(totalActiveTime / 1000),
-        engagementRatio: Math.round(engagementRatio * 100) / 100,
-        maxScrollDepth: maxScroll,
-      });
-
-      // Force sync flush on exit (no retry, fire-and-forget)
+      emitPageExit();
       flushSync();
     });
   }
@@ -1416,17 +1440,16 @@
     mutationObserver = new MutationObserver(function() {
       if (window.location.pathname !== lastPath) {
         lastPath = window.location.pathname;
-        // Flush section visibility data for the leaving page
-        flushVisibleSections();
-        // Reset scroll tracking for new page
+        emitPageExit();
+        // Reset tracking state for new page
         trackedScrollDepths = new Set();
         pageLoadTime = Date.now();
         lastActivityTime = Date.now();
         totalActiveTime = 0;
-        // Track new page view
+        isPageVisible = true;
         trackPageView();
-        // Re-observe headings on the new page
         observeHeadings();
+        checkScrollDepth();
       }
     });
 
@@ -1439,13 +1462,15 @@
     window.addEventListener('popstate', function() {
       if (window.location.pathname !== lastPath) {
         lastPath = window.location.pathname;
-        flushVisibleSections();
+        emitPageExit();
         trackedScrollDepths = new Set();
         pageLoadTime = Date.now();
         lastActivityTime = Date.now();
         totalActiveTime = 0;
+        isPageVisible = true;
         trackPageView();
         observeHeadings();
+        checkScrollDepth();
       }
     });
 
