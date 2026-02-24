@@ -148,17 +148,17 @@ AxiomDo11y.version        // Script version
 
 ## Tests
 
-The `test/` directory contains two layers of testing.
+The `tests` directory contains multiple layers of testing.
 
-### Selector tests against live sites (`test/test-live-sites.js`)
+### Selector tests against live sites (`tests/test-live-sites.js`)
 
 Runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production.
 
 ```bash
-cd test
-npm install
+cd tests
+npm i
 npx puppeteer browsers install chrome
-node test-live-sites.js
+npm run test-live-sites
 ```
 
 Sites tested:
@@ -172,33 +172,31 @@ Sites tested:
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
 
-### Query validation (`test/integration/test-queries.js`)
+### Query validation (`tests/test-queries.js`)
 
 Validates that all APL queries in [QUERIES.md](QUERIES.md) are syntactically correct by executing them against the Axiom API.
 
 ```bash
-cd test/integration
-node test-queries.js
+cd tests
+npm run test-queries
 ```
 
-Uses the same `.env` credentials as the integration tests.
-
-### Integration tests (`test/integration/`)
+### Integration tests (`tests/test-integrations.js`)
 
 End-to-end tests that install each supported framework, inject `do11y.js`, start a local dev server, drive user interactions via Puppeteer, and then query the Axiom API to verify that events arrived correctly.
 
 ```bash
-cd test/integration
-npm install
+cd tests
+npm i
 npx puppeteer browsers install chrome
 ```
 
-Copy `test/integration/.env.example` to `test/integration/.env` and add your credentials:
+Copy `tests/.env.example` to `tests/.env` and add your credentials:
 
 ```
-AXIOM_DOMAIN=api.axiom.co
-AXIOM_TOKEN=xaat-your-token
-AXIOM_DATASET=do11y-integration-test
+AXIOM_DOMAIN=us-east-1.aws.edge.axiom.co
+AXIOM_TOKEN=xaat-your-ingest-token
+AXIOM_DATASET=do11y
 ```
 
 The token needs both **ingest** and **query** permissions on the target dataset.
@@ -206,19 +204,19 @@ The token needs both **ingest** and **query** permissions on the target dataset.
 Run the full suite:
 
 ```bash
-npm test
+npm run test-integrations
 ```
 
 Run a subset of frameworks:
 
 ```bash
-FRAMEWORKS=mintlify,vitepress npm test
+FRAMEWORKS=mintlify,vitepress npm run test-integrations
 ```
 
 Skip dependency installation on repeat runs:
 
 ```bash
-SKIP_INSTALL=1 npm test
+SKIP_INSTALL=1 npm run test-integrations
 ```
 
 **Frameworks tested:**
@@ -245,19 +243,19 @@ SKIP_INSTALL=1 npm test
 
 ## Known limitations
 
-### Copy-button detection on Nextra and GitBook
+### Copy-button detection on GitBook
 
-The `copyButtonSelector` does not match copy buttons on **Nextra** or **GitBook** sites. Both frameworks render copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
+The `copyButtonSelector` does not match copy buttons on **GitBook** sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
 
-**Workaround:** If you use Nextra or GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
+**Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
 
-### Nextra search on custom themes
+### Custom themes
 
-The default Nextra `searchSelector` (`.nextra-search input`) works on sites using the standard Nextra theme. Sites with heavily customized themes (for example, [SWR](https://swr.vercel.app)) may render search differently or only inject the search input into the DOM when the user presses Cmd/Ctrl+K, which means the element is not present on initial page load.
+The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, you may need to set the selectors manually.
 
-### Framework selectors may drift over time
+### Framework selector drift
 
-CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The live site test suite (`test-live-sites.js`) exists specifically to catch this. Run it periodically to verify selectors still match.
+CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.js` and `test-queries.js`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
 ## License
 

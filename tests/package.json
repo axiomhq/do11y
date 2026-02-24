@@ -1,0 +1,14 @@
+{
+  "name": "do11y-tests",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test-integrations": "node test-integrations.js",
+    "test-live-sites": "node test-live-sites.js",
+    "test-queries": "node test-queries.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "puppeteer": "^24.0.0"
+  }
+}

@@ -56,7 +56,7 @@ const FRAMEWORK_PRESETS = {
 const TEST_SITES = {
   mintlify:          'https://axiom.co/docs/query-data/explore',
   docusaurus:        'https://docusaurus.io/docs/configuration',
-  nextra:            'https://nextra.site/docs/getting-started',
+  nextra:            'https://nextra.site/docs/docs-theme/start',
   gitbook:           'https://docs.gitbook.com/content-creation/blocks/code-block',
   'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/getting-started/',
   vitepress:         'https://vitepress.dev/guide/getting-started',
