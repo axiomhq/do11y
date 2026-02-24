@@ -498,7 +498,7 @@ async function main() {
   console.log('='.repeat(60));
   console.log();
 
-  const queriesPath = path.resolve(__dirname, '../../QUERIES.md');
+  const queriesPath = path.resolve(__dirname, '../QUERIES.md');
   if (!fs.existsSync(queriesPath)) {
     console.error(`QUERIES.md not found at ${queriesPath}`);
     process.exit(1);

@@ -33,7 +33,7 @@ const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
 const AXIOM_DATASET = process.env.AXIOM_DATASET;
 const SKIP_INSTALL = process.env.SKIP_INSTALL === '1';
 
-const DO11Y_SRC = path.resolve(__dirname, '../../do11y.js');
+const DO11Y_SRC = path.resolve(__dirname, '../do11y.js');
 const SITES_DIR = path.join(__dirname, 'sites');
 
 // ─── Framework definitions ──────────────────────────────────────────────────
