@@ -429,6 +429,69 @@
   }
 
   /**
+   * Known AI platform referrer patterns.
+   * Each entry maps a substring found in the referrer hostname to an AI
+   * platform label. Order matters: first match wins.
+   */
+  const AI_REFERRER_PATTERNS = [
+    { match: 'chatgpt',    platform: 'ChatGPT' },
+    { match: 'chat.com',   platform: 'ChatGPT' },
+    { match: 'openai',     platform: 'ChatGPT' },
+    { match: 'perplexity', platform: 'Perplexity' },
+    { match: 'claude.ai',  platform: 'Claude' },
+    { match: 'anthropic',  platform: 'Claude' },
+    { match: 'gemini',     platform: 'Gemini' },
+    { match: 'copilot',    platform: 'Copilot' },
+    { match: 'deepseek',   platform: 'DeepSeek' },
+    { match: 'meta.ai',    platform: 'Meta AI' },
+    { match: 'grok',       platform: 'Grok' },
+    { match: 'x.ai',       platform: 'Grok' },
+    { match: 'mistral',    platform: 'Mistral' },
+    { match: 'you.com',    platform: 'You.com' },
+    { match: 'phind',      platform: 'Phind' },
+  ];
+
+  /**
+   * Classify a referrer hostname into a traffic source category.
+   * Returns { referrerCategory, aiPlatform } where aiPlatform is null
+   * for non-AI traffic.
+   */
+  function classifyReferrer(hostname) {
+    if (!hostname || hostname === 'direct') {
+      return { referrerCategory: 'direct', aiPlatform: null };
+    }
+    if (hostname === 'internal') {
+      return { referrerCategory: 'internal', aiPlatform: null };
+    }
+    if (hostname === 'unknown') {
+      return { referrerCategory: 'unknown', aiPlatform: null };
+    }
+
+    var h = hostname.toLowerCase();
+
+    for (var i = 0; i < AI_REFERRER_PATTERNS.length; i++) {
+      if (h.indexOf(AI_REFERRER_PATTERNS[i].match) !== -1) {
+        return { referrerCategory: 'ai', aiPlatform: AI_REFERRER_PATTERNS[i].platform };
+      }
+    }
+
+    if (/google\.|bing\.|baidu\.|yandex\.|duckduckgo\.|yahoo\./.test(h)) {
+      return { referrerCategory: 'search-engine', aiPlatform: null };
+    }
+    if (/github\.|gitlab\.|bitbucket\./.test(h)) {
+      return { referrerCategory: 'code-host', aiPlatform: null };
+    }
+    if (/stackoverflow\.|stackexchange\.|reddit\.|news\.ycombinator\./.test(h)) {
+      return { referrerCategory: 'community', aiPlatform: null };
+    }
+    if (/twitter\.|x\.com|linkedin\.|facebook\.|threads\.net/.test(h)) {
+      return { referrerCategory: 'social', aiPlatform: null };
+    }
+
+    return { referrerCategory: 'other', aiPlatform: null };
+  }
+
+  /**
    * Get referrer domain only (not full URL for privacy)
    */
   function getReferrerDomain() {
@@ -691,8 +754,13 @@
   function trackPageView() {
     const session = updatePageSequence(window.location.pathname);
     
+    const referrerDomain = getReferrerDomain();
+    const referrerInfo = classifyReferrer(referrerDomain);
+
     queueEvent('page_view', {
-      referrerDomain: getReferrerDomain(),
+      referrerDomain: referrerDomain,
+      referrerCategory: referrerInfo.referrerCategory,
+      aiPlatform: referrerInfo.aiPlatform,
       isFirstPage: session.pageCount === 1,
       previousPath: session.pageSequence.length > 1 
         ? session.pageSequence[session.pageSequence.length - 2].path 
