@@ -104,7 +104,7 @@ Compare engagement depth for AI-referred visitors vs other sources.
 ```apl
 ['do11y']
 | where eventType == 'page_exit'
-| lookup (
+| join kind=inner (
     ['do11y']
     | where eventType == 'page_view' and isFirstPage == true
     | project sessionId, referrerCategory
