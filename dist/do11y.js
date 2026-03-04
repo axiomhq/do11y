@@ -54,7 +54,7 @@
     axiomDataset: 'DATASET_NAME',
     // API token for ingest - use a token with ONLY ingest permissions
     // IMPORTANT: Create a restricted token that can only ingest to this dataset
-    axiomToken: "API_TOKEN",
+    axiomToken: 'API_TOKEN',
     // Enable debug logging to console
     debug: false,
     // Batch events and send periodically (milliseconds)
