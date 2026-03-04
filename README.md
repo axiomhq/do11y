@@ -273,6 +273,41 @@ The selectors work on sites using the standard themes of each supported framewor
 
 CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.js` and `test-queries.js`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
+## Automatic sync to your docs repo
+
+The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. This keeps the copy of `do11y.js` in your docs site in sync without manual copying.
+
+### Setup
+
+Configure the workflow in your fork or copy of this repo under **Settings > Secrets and variables > Actions**:
+
+**Variables:**
+
+| Variable | Example | Description |
+|---|---|---|
+| `DOCS_REPO` | `axiomhq/docs` | Target docs repo in `owner/name` format. |
+| `DOCS_DEST_PATH` | `styles/do11y.js` | Path where `do11y.js` lives in the target repo. |
+
+**Secrets:**
+
+| Secret | Description |
+|---|---|
+| `DOCS_REPO_TOKEN` | A GitHub Personal Access Token with `contents: write` and `pull_requests: write` permissions on the target docs repo. |
+
+To create the token: go to **GitHub > Settings > Developer settings > Fine-grained tokens**, create a token scoped to your docs repo with the permissions above, and store it as `DOCS_REPO_TOKEN` in this repo's action secrets.
+
+### Creating a release
+
+Tag and release to trigger the sync:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+gh release create v1.1.0
+```
+
+The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+
 ## License
 
 [MIT](LICENSE)
