@@ -21,7 +21,9 @@ No GDPR consent banner is required.
 <script src="/path/to/do11y.js"></script>
 ```
 
-2. Configure your Axiom credentials. You can either edit the `config` object at the top of `do11y.js` directly, or inject values via HTML `<meta>` tags:
+2. Configure your Axiom credentials using one of the methods below. Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
+
+**Option A: Meta tags** (simplest, covers the essentials)
 
 ```html
 <meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
@@ -30,11 +32,36 @@ No GDPR consent banner is required.
 <meta name="axiom-do11y-framework" content="mintlify">
 ```
 
+**Option B: External config file** (full control over all options)
+
+Create a separate config file and load it before `do11y.js`:
+
+```html
+<script src="/path/to/do11y-config.js"></script>
+<script src="/path/to/do11y.js"></script>
+```
+
+In `do11y-config.js`, set any config options you want to override:
+
+```javascript
+window.Do11yConfig = {
+  'axiom-domain': 'us-east-1.aws.edge.axiom.co',
+  'api-token': 'xaat-your-ingest-token',
+  'dataset-name': 'do11y',
+  framework: 'mintlify',
+  allowedDomains: ['docs.example.com'],
+};
+```
+
+For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Name the config file so it loads before `do11y.js` alphabetically (e.g. `do11y-config.js`).
+
+Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
+
 3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 ## Configuration
 
-All options live in the `config` object at the top of `do11y.js`.
+All options can be set via `window.Do11yConfig`, meta tags, or the `config` object at the top of `do11y.js`. Using `window.Do11yConfig` or meta tags is recommended so you can update `do11y.js` without losing your settings.
 
 ### Axiom connection
 
@@ -307,6 +334,8 @@ gh release create v1.1.0
 ```
 
 The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+
+The workflow only replaces `do11y.js` itself. Your site-specific configuration is safe as long as you use `window.Do11yConfig` (in a separate file like `do11y-config.js`) or meta tags instead of editing `do11y.js` directly. See [Quick start](#quick-start) for setup.
 
 ## License
 

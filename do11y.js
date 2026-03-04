@@ -18,13 +18,18 @@
  * 
  * No GDPR consent banner required.
  * 
- * Configuration:
- * Set `axiom-domain`, `api-token`, and `dataset-name` in the config
- * object below, or in an HTML <meta> tag:
- * <meta name="axiom-do11y-domain" content="axiom-domain">
- * <meta name="axiom-do11y-token" content="api-token">
- * <meta name="axiom-do11y-dataset" content="dataset-name">
- * <meta name="axiom-do11y-framework" content="mintlify">
+ * Configuration (in order of precedence):
+ * 1. HTML <meta> tags:
+ *    <meta name="axiom-do11y-domain" content="axiom-domain">
+ *    <meta name="axiom-do11y-token" content="api-token">
+ *    <meta name="axiom-do11y-dataset" content="dataset-name">
+ *    <meta name="axiom-do11y-framework" content="mintlify">
+ * 2. window.Do11yConfig object (set in a separate script before this file):
+ *    window.Do11yConfig = { 'api-token': '...', framework: 'mintlify' };
+ * 3. The config object below (defaults).
+ *
+ * Using meta tags or window.Do11yConfig is recommended so you can
+ * update do11y.js without losing your settings.
  */
 
 (function() {
@@ -1424,6 +1429,21 @@
    * Initialize do11y
    */
   function init() {
+    // Apply external config (set window.Do11yConfig before loading do11y.js)
+    if (window.Do11yConfig && typeof window.Do11yConfig === 'object') {
+      for (var key in window.Do11yConfig) {
+        if (window.Do11yConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+          config[key] = window.Do11yConfig[key];
+        }
+      }
+    }
+
+    // Meta tags override both defaults and Do11yConfig
+    var metaDomain = document.querySelector('meta[name="axiom-do11y-domain"]');
+    if (metaDomain) {
+      config['axiom-domain'] = metaDomain.getAttribute('content');
+    }
+
     // Check for token in a meta tag (secure server-side injection)
     var metaToken = document.querySelector('meta[name="axiom-do11y-token"]');
     if (metaToken) {
