@@ -32,7 +32,7 @@ jobs:
           path: _docs
 
       - name: Copy do11y.js
-        run: cp do11y.js "_docs/${{ vars.DOCS_DEST_PATH }}"
+        run: cp dist/do11y.js "_docs/${{ vars.DOCS_DEST_PATH }}"
 
       - name: Check for changes
         id: diff

@@ -15,15 +15,29 @@ No GDPR consent banner is required.
 
 ## Quick start
 
-1. Add the script to every page of your documentation site, before the closing `</body>` tag:
+The `dist/` directory contains the files you need:
+
+- `do11y.js` -- the main script
+- `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
+
+1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+
+2. Add both scripts to every page, with the config file loading first:
 
 ```html
+<script src="/path/to/do11y-config.js"></script>
 <script src="/path/to/do11y.js"></script>
 ```
 
-2. Configure your Axiom credentials using one of the methods below. Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
+For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-**Option A: Meta tags** (simplest, covers the essentials)
+3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+
+Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
+
+### Alternative: meta tags
+
+If you only need to set the essentials, you can use meta tags instead of a config file:
 
 ```html
 <meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
@@ -32,36 +46,13 @@ No GDPR consent banner is required.
 <meta name="axiom-do11y-framework" content="mintlify">
 ```
 
-**Option B: External config file** (full control over all options)
-
-Create a separate config file and load it before `do11y.js`:
-
-```html
-<script src="/path/to/do11y-config.js"></script>
-<script src="/path/to/do11y.js"></script>
-```
-
-In `do11y-config.js`, set any config options you want to override:
-
-```javascript
-window.Do11yConfig = {
-  'axiom-domain': 'us-east-1.aws.edge.axiom.co',
-  'api-token': 'xaat-your-ingest-token',
-  'dataset-name': 'do11y',
-  framework: 'mintlify',
-  allowedDomains: ['docs.example.com'],
-};
-```
-
-For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Name the config file so it loads before `do11y.js` alphabetically (e.g. `do11y-config.js`).
-
 Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
 
 3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 ## Configuration
 
-All options can be set via `window.Do11yConfig`, meta tags, or the `config` object at the top of `do11y.js`. Using `window.Do11yConfig` or meta tags is recommended so you can update `do11y.js` without losing your settings.
+All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tags, or the `config` object at the top of `do11y.js`. Using the config file or meta tags is recommended so you can update `do11y.js` without losing your settings.
 
 ### Axiom connection
 
@@ -335,7 +326,7 @@ gh release create v1.1.0
 
 The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
 
-The workflow only replaces `do11y.js` itself. Your site-specific configuration is safe as long as you use `window.Do11yConfig` (in a separate file like `do11y-config.js`) or meta tags instead of editing `do11y.js` directly. See [Quick start](#quick-start) for setup.
+The workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
 
 ## License
 
