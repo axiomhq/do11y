@@ -16,13 +16,13 @@ window.Do11yConfig = {
   // Use an edge deployment domain for lower latency:
   //   US East 1 (AWS):    'us-east-1.aws.edge.axiom.co'
   //   EU Central 1 (AWS): 'eu-central-1.aws.edge.axiom.co'
-  'axiom-domain': 'AXIOM_DOMAIN',
+  axiomHost: 'AXIOM_DOMAIN',
 
   // Required: Ingest-only API token scoped to a single dataset.
-  'api-token': 'API_TOKEN',
+  axiomToken: 'API_TOKEN',
 
   // Required: Target Axiom dataset.
-  'dataset-name': 'DATASET_NAME',
+  axiomDataset: 'DATASET_NAME',
 
   // Documentation framework. Supported values:
   // 'mintlify', 'docusaurus', 'nextra', 'gitbook', 'mkdocs-material',

@@ -58,9 +58,9 @@ All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tag
 
 | Option | Default | Description |
 |---|---|---|
-| `axiom-domain` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
-| `dataset-name` | `'DATASET_NAME'` | Target Axiom dataset. |
-| `api-token` | `'API_TOKEN'` | Ingest-only API token. |
+| `axiomHost` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
+| `axiomDataset` | `'DATASET_NAME'` | Target Axiom dataset. |
+| `axiomToken` | `'API_TOKEN'` | Ingest-only API token. |
 
 ### Behavior
 
