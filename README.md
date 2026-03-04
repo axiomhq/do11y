@@ -107,7 +107,7 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 
 | Event | Description | Key fields |
 |---|---|---|
-| `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `isFirstPage`, `previousPath` |
+| `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `referrerCategory`, `aiPlatform`, `isFirstPage`, `previousPath` |
 | `link_click` | Internal, external, anchor, or email link click. | `linkType`, `targetUrl`, `linkText`, `linkContext`, `linkSection`, `linkIndex` |
 | `scroll_depth` | User scrolls past a configured threshold. | `threshold`, `scrollPercent` |
 | `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth` |
@@ -125,6 +125,7 @@ Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `tit
 
 See [QUERIES.md](QUERIES.md) for APL queries to analyze your documentation, including:
 
+- AI traffic detection and trends
 - Traffic sources and entry points
 - Page engagement and scroll completion
 - Where users get stuck (exit pages, low engagement)
@@ -240,6 +241,21 @@ SKIP_INSTALL=1 npm run test-integrations
 | `page_exit` | 1 |
 | `search_opened` | 0 (best-effort) |
 | `code_copied` | 0 (best-effort) |
+
+## AI traffic detection
+
+Do11y classifies referrer domains to detect traffic from AI platforms such as ChatGPT, Perplexity, Claude, Gemini, Copilot, DeepSeek, and others. Each `page_view` event includes:
+
+| Field | Values | Description |
+|---|---|---|
+| `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
+| `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
+
+This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. No fingerprinting, user-agent parsing, or additional data collection is involved.
+
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) do not pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
+
+See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
 
 ## Known limitations
 
