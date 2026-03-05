@@ -80,7 +80,7 @@ Track AI-referred sessions over time.
 | summarize
     total = count(),
     ai = countif(referrerCategory == 'ai')
-  by week
+  by bin_auto(_time), week
 | extend aiPct = round(100.0 * ai / total, 1)
 | order by week asc
 ```
@@ -545,7 +545,7 @@ Track traffic growth over time.
 ['do11y']
 | where eventType == 'page_view'
 | extend week = startofweek(_time)
-| summarize pageViews = count(), uniqueSessions = dcount(sessionId) by week
+| summarize pageViews = count(), uniqueSessions = dcount(sessionId) by bin_auto(_time), week
 | order by week asc
 ```
 
