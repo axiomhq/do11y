@@ -80,7 +80,7 @@ Track AI-referred sessions over time.
 | summarize
     total = count(),
     ai = countif(referrerCategory == 'ai')
-  by week
+  by bin_auto(_time), week
 | extend aiPct = round(100.0 * ai / total, 1)
 | order by week asc
 ```
