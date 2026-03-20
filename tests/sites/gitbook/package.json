@@ -5,6 +5,6 @@
     "build": "honkit build"
   },
   "devDependencies": {
-    "honkit": "^6.1.6"
+    "honkit": "^6.1.7"
   }
 }
