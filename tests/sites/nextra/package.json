@@ -2,8 +2,7 @@
   "name": "do11y-test-nextra",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "start": "next start -p 4002"
+    "start": "next dev -p 4002"
   },
   "dependencies": {
     "next": "^15.5.14",
