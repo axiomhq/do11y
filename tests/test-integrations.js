@@ -78,9 +78,10 @@ const FRAMEWORKS = {
     type: 'npm',
     dir: path.join(SITES_DIR, 'nextra'),
     do11yDest: path.join(SITES_DIR, 'nextra', 'public', 'do11y.js'),
+    buildCmd: 'npm run build',
     startCmd: 'npm',
     startArgs: ['run', 'start'],
-    readyPattern: /Ready in|started server|localhost:4002/,
+    readyPattern: /Ready|started server|localhost:4002/,
     startPage: '/',
     guidePage: '/guide',
   },
@@ -88,10 +89,11 @@ const FRAMEWORKS = {
     port: 4003,
     type: 'npm',
     dir: path.join(SITES_DIR, 'vitepress'),
-    do11yDest: path.join(SITES_DIR, 'vitepress', 'public', 'do11y.js'),
+    do11yDest: path.join(SITES_DIR, 'vitepress', '.vitepress', 'dist', 'do11y.js'),
+    buildCmd: 'npm run build',
     startCmd: 'npm',
     startArgs: ['run', 'start'],
-    readyPattern: /vitepress.*started|localhost:4003/i,
+    readyPattern: /localhost:4003/i,
     startPage: '/',
     guidePage: '/guide',
   },
@@ -116,9 +118,10 @@ function fail(msg) { console.log(`\x1b[31m[runner]\x1b[0m ${msg}`); }
 
 function patchDo11y(destPath, framework, testRunId) {
   let src = fs.readFileSync(DO11Y_SRC, 'utf8');
-  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN}'`);
-  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET}'`);
-  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN}'`);
+  // Trim to guard against trailing newlines from copy-pasting into secret fields
+  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN.trim()}'`);
+  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET.trim()}'`);
+  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN.trim()}'`);
   // allowedDomains defaults to null, no replacement needed
   src = src.replace('debug: false', 'debug: true');
   // Inject testRunId and framework into every event
@@ -258,10 +261,31 @@ async function runInteractions(browser, baseUrl, fw) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
 
+  // Forward browser console output so do11y debug logs are visible in CI
+  page.on('console', (msg) => {
+    const text = msg.text();
+    const type = msg.type();
+    if (text.includes('[Axiom Do11y]') || type === 'error' || type === 'warning') {
+      log(`  [browser:${type}] ${text}`);
+    }
+  });
+  page.on('pageerror', (err) => warn(`  [browser:pageerror] ${err.message}`));
+  page.on('requestfailed', (req) => {
+    warn(`  [browser:requestfailed] ${req.url()} — ${req.failure()?.errorText}`);
+  });
+
   // 1. Page view on start page
   log('  → page_view (start page)');
   await page.goto(`${baseUrl}${fw.startPage}`, { waitUntil: 'networkidle2', timeout: 30000 });
   await sleep(1500);
+
+  // Verify do11y.js initialised
+  const do11yState = await page.evaluate(() => ({
+    initialized: !!window.__axiomDo11yInitialized,
+    scriptPresent: !!document.querySelector('script[src*="do11y"]'),
+  }));
+  if (!do11yState.scriptPresent) warn('  ⚠ No do11y script tag found in DOM');
+  if (!do11yState.initialized) warn('  ⚠ window.__axiomDo11yInitialized not set — do11y.js did not load');
 
   // 2. Scroll to bottom (triggers scroll_depth at 25, 50, 75, 90%)
   log('  → scroll_depth');
@@ -552,7 +576,12 @@ function validateEvents(framework, events) {
     // Fall back to the sibling test directory's puppeteer
     puppeteer = require(path.join(__dirname, '../node_modules/puppeteer'));
   }
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: process.env.CI
+      ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+      : [],
+  });
 
   const servers = [];       // track servers to shut down later
   const processes = [];     // track child processes to kill later
