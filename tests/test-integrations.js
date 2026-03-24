@@ -78,9 +78,10 @@ const FRAMEWORKS = {
     type: 'npm',
     dir: path.join(SITES_DIR, 'nextra'),
     do11yDest: path.join(SITES_DIR, 'nextra', 'public', 'do11y.js'),
+    buildCmd: 'npm run build',
     startCmd: 'npm',
     startArgs: ['run', 'start'],
-    readyPattern: /Ready in|started server|localhost:4002/,
+    readyPattern: /Ready|started server|localhost:4002/,
     startPage: '/',
     guidePage: '/guide',
   },
@@ -258,6 +259,15 @@ function killProc(proc) {
 async function runInteractions(browser, baseUrl, fw) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
+
+  // Forward browser console output so do11y debug logs are visible in CI
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (text.includes('[Axiom Do11y]')) log(`  [browser] ${text}`);
+  });
+  page.on('requestfailed', (req) => {
+    if (req.url().includes('axiom')) warn(`  [browser] Request failed: ${req.url()} — ${req.failure()?.errorText}`);
+  });
 
   // 1. Page view on start page
   log('  → page_view (start page)');
