@@ -116,9 +116,10 @@ function fail(msg) { console.log(`\x1b[31m[runner]\x1b[0m ${msg}`); }
 
 function patchDo11y(destPath, framework, testRunId) {
   let src = fs.readFileSync(DO11Y_SRC, 'utf8');
-  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN}'`);
-  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET}'`);
-  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN}'`);
+  // Trim to guard against trailing newlines from copy-pasting into secret fields
+  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN.trim()}'`);
+  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET.trim()}'`);
+  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN.trim()}'`);
   // allowedDomains defaults to null, no replacement needed
   src = src.replace('debug: false', 'debug: true');
   // Inject testRunId and framework into every event
