@@ -23,21 +23,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: tests/package-lock.json
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install Python dependencies
-        run: pip install mkdocs-material
-        working-directory: tests/sites/mkdocs-material
+      # Cache the test runner's node_modules and the Puppeteer Chrome binary
+      # together — both are keyed on package-lock.json so they stay in sync.
+      - name: Cache test runner deps + Puppeteer Chrome
+        id: cache-test-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            tests/node_modules
+            ~/.cache/puppeteer
+          key: test-deps-${{ runner.os }}-${{ hashFiles('tests/package-lock.json') }}
 
       - name: Install test runner dependencies
+        if: steps.cache-test-deps.outputs.cache-hit != 'true'
         run: npm install
         working-directory: tests
+
+      # Cache each framework site's node_modules.
+      # Key covers every framework package.json so a lockfile change in any
+      # one site correctly busts the cache for all of them.
+      - name: Cache framework site dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            tests/sites/mintlify/node_modules
+            tests/sites/gitbook/node_modules
+            tests/sites/docusaurus/node_modules
+            tests/sites/nextra/node_modules
+            tests/sites/vitepress/node_modules
+          key: framework-deps-${{ runner.os }}-${{ hashFiles('tests/sites/*/package.json') }}
+
+      # Cache pip packages for mkdocs-material.
+      - name: Cache Python dependencies
+        id: cache-python-deps
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: python-deps-${{ runner.os }}-${{ hashFiles('tests/sites/mkdocs-material/requirements.txt') }}
+
+      - name: Install Python dependencies
+        if: steps.cache-python-deps.outputs.cache-hit != 'true'
+        run: pip install mkdocs-material
+        working-directory: tests/sites/mkdocs-material
 
       - name: Run integration tests
         run: npm run test-integrations
