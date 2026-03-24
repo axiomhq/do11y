@@ -552,10 +552,7 @@ function validateEvents(framework, events) {
     // Fall back to the sibling test directory's puppeteer
     puppeteer = require(path.join(__dirname, '../node_modules/puppeteer'));
   }
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
-  });
+  const browser = await puppeteer.launch({ headless: true });
 
   const servers = [];       // track servers to shut down later
   const processes = [];     // track child processes to kill later
