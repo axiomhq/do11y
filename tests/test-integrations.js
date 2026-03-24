@@ -18,7 +18,7 @@
  *
  * Optional (can override in .env or shell):
  *   FRAMEWORKS      — Comma-separated list of frameworks to test (default: all)
- *   SKIP_INSTALL    — Set to "1" to skip npm/pip install (deps already present)
+ *   SKIP_INSTALL    — "1" skips install entirely; "0" forces install even if node_modules exists; unset installs only when node_modules is absent
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
@@ -32,6 +32,7 @@ const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN;
 const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
 const AXIOM_DATASET = process.env.AXIOM_DATASET;
 const SKIP_INSTALL = process.env.SKIP_INSTALL === '1';
+const FORCE_INSTALL = process.env.SKIP_INSTALL === '0';
 
 const DO11Y_SRC = path.resolve(__dirname, '../dist/do11y.js');
 const SITES_DIR = path.join(__dirname, 'sites');
@@ -187,7 +188,7 @@ function startStaticServer(dir, port) {
 
 function installDeps(fw) {
   if (fw.type === 'npm') {
-    if (!SKIP_INSTALL && !fs.existsSync(path.join(fw.dir, 'node_modules'))) {
+    if (!SKIP_INSTALL && (FORCE_INSTALL || !fs.existsSync(path.join(fw.dir, 'node_modules')))) {
       log(`  Installing npm dependencies…`);
       execSync('npm install', { cwd: fw.dir, stdio: 'pipe' });
     }
@@ -577,7 +578,7 @@ function validateEvents(framework, events) {
     // 0b. Build step for static sites that require it (e.g. HonKit)
     if (fw.buildCmd && fw.dir) {
       try {
-        if (!SKIP_INSTALL && !fs.existsSync(path.join(fw.dir, 'node_modules'))) {
+        if (!SKIP_INSTALL && (FORCE_INSTALL || !fs.existsSync(path.join(fw.dir, 'node_modules')))) {
           log('  Installing npm dependencies…');
           execSync('npm install', { cwd: fw.dir, stdio: 'pipe' });
         }
