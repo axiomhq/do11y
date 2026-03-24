@@ -2,14 +2,11 @@ name: Integration tests
 
 # Runs the full integration test suite on every PR commit.
 #
-# Required setup (Settings > Secrets and variables > Actions):
+# Required setup (Settings > Secrets and variables > Actions > Secrets):
 #
-#   Secrets:
-#     AXIOM_TOKEN    — API token with ingest + query permissions.
-#
-#   Variables:
-#     AXIOM_DOMAIN   — Axiom domain.
-#     AXIOM_DATASET  — Dataset to use for test events.
+#   AXIOM_TOKEN    — API token with ingest + query permissions.
+#   AXIOM_DOMAIN   — Axiom domain.
+#   AXIOM_DATASET  — Dataset to use for test events.
 
 on:
   pull_request:
@@ -45,6 +42,6 @@ jobs:
         run: npm run test-integrations
         working-directory: tests
         env:
-          AXIOM_DOMAIN: ${{ vars.AXIOM_DOMAIN }}
+          AXIOM_DOMAIN: ${{ secrets.AXIOM_DOMAIN }}
           AXIOM_TOKEN: ${{ secrets.AXIOM_TOKEN }}
-          AXIOM_DATASET: ${{ vars.AXIOM_DATASET }}
+          AXIOM_DATASET: ${{ secrets.AXIOM_DATASET }}
