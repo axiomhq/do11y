@@ -55,6 +55,68 @@ const QUERY_EXPECTATIONS = {
       return null;
     },
   },
+  'AI traffic overview': {
+    columns: ['total', 'aiSessions', 'searchSessions', 'directSessions', 'socialSessions', 'communitySessions', 'codeHostSessions', 'otherSessions', 'aiPct'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
+        if (typeof row.aiSessions !== 'number' || row.aiSessions < 0) return 'aiSessions should be a non-negative number';
+        if (row.aiSessions > row.total) return 'aiSessions should not exceed total';
+      }
+      return null;
+    },
+  },
+  'AI traffic by platform': {
+    columns: ['aiPlatform', 'sessions'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.sessions !== 'number' || row.sessions < 0) return 'sessions should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'AI traffic trend': {
+    columns: ['week', 'total', 'ai', 'aiPct'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
+        if (typeof row.ai !== 'number' || row.ai < 0) return 'ai should be a non-negative number';
+        if (row.ai > row.total) return 'ai should not exceed total';
+      }
+      return null;
+    },
+  },
+  'Pages discovered via AI': {
+    columns: ['path', 'aiPlatform', 'sessions'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.path !== 'string') return 'path should be a string';
+        if (typeof row.sessions !== 'number' || row.sessions < 0) return 'sessions should be a non-negative number';
+      }
+      return null;
+    },
+  },
+  'AI vs non-AI engagement': {
+    columns: ['referrerCategory', 'visits', 'avgTime', 'avgScroll', 'avgEngagement'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.visits !== 'number' || row.visits < 0) return 'visits should be a non-negative number';
+        if (row.avgScroll !== null && (row.avgScroll < 0 || row.avgScroll > 100)) {
+          return 'avgScroll should be between 0 and 100';
+        }
+      }
+      return null;
+    },
+  },
+  'Traffic source breakdown': {
+    columns: ['referrerCategory', 'sessions'],
+    validate: (rows) => {
+      for (const row of rows) {
+        if (typeof row.sessions !== 'number' || row.sessions < 0) return 'sessions should be a non-negative number';
+      }
+      return null;
+    },
+  },
   'Page engagement score': {
     columns: ['path', 'avgActiveTime', 'avgEngagement', 'avgScrollDepth', 'visits', 'engagementScore'],
     validate: (rows) => {

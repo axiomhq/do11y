@@ -39,6 +39,96 @@ Understand which sources land on which pages.
 | take 30
 ```
 
+### AI traffic overview
+
+See how much of your documentation traffic comes from AI platforms.
+
+```apl
+['do11y']
+| where eventType == 'page_view' and isFirstPage == true
+| summarize
+    total = count(),
+    aiSessions = countif(referrerCategory == 'ai'),
+    searchSessions = countif(referrerCategory == 'search-engine'),
+    directSessions = countif(referrerCategory == 'direct'),
+    socialSessions = countif(referrerCategory == 'social'),
+    communitySessions = countif(referrerCategory == 'community'),
+    codeHostSessions = countif(referrerCategory == 'code-host'),
+    otherSessions = countif(referrerCategory == 'other')
+| extend aiPct = round(100.0 * aiSessions / total, 1)
+```
+
+### AI traffic by platform
+
+Break down AI traffic by platform (ChatGPT, Perplexity, Claude, etc.).
+
+```apl
+['do11y']
+| where eventType == 'page_view' and isFirstPage == true and referrerCategory == 'ai'
+| summarize sessions = count() by aiPlatform
+| order by sessions desc
+```
+
+### AI traffic trend
+
+Track AI-referred sessions over time.
+
+```apl
+['do11y']
+| where eventType == 'page_view' and isFirstPage == true
+| extend week = startofweek(_time)
+| summarize
+    total = count(),
+    ai = countif(referrerCategory == 'ai')
+  by bin_auto(_time), week
+| extend aiPct = round(100.0 * ai / total, 1)
+| order by week asc
+```
+
+### Pages discovered via AI
+
+Find which documentation pages AI platforms link to most.
+
+```apl
+['do11y']
+| where eventType == 'page_view' and isFirstPage == true and referrerCategory == 'ai'
+| summarize sessions = count() by path, aiPlatform
+| order by sessions desc
+| take 30
+```
+
+### AI vs non-AI engagement
+
+Compare engagement depth for AI-referred visitors vs other sources.
+
+```apl
+['do11y']
+| where eventType == 'page_exit'
+| join kind=inner (
+    ['do11y']
+    | where eventType == 'page_view' and isFirstPage == true
+    | project sessionId, referrerCategory
+  ) on sessionId
+| summarize
+    visits = count(),
+    avgTime = avg(activeTimeSeconds),
+    avgScroll = avg(maxScrollDepth),
+    avgEngagement = avg(engagementRatio)
+  by referrerCategory
+| order by visits desc
+```
+
+### Traffic source breakdown
+
+Summarize traffic by category.
+
+```apl
+['do11y']
+| where eventType == 'page_view' and isFirstPage == true
+| summarize sessions = count() by referrerCategory
+| order by sessions desc
+```
+
 ## Engagement and page performance
 
 ### Page engagement score
@@ -455,7 +545,7 @@ Track traffic growth over time.
 ['do11y']
 | where eventType == 'page_view'
 | extend week = startofweek(_time)
-| summarize pageViews = count(), uniqueSessions = dcount(sessionId) by week
+| summarize pageViews = count(), uniqueSessions = dcount(sessionId) by bin_auto(_time), week
 | order by week asc
 ```
 

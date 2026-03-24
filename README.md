@@ -15,13 +15,29 @@ No GDPR consent banner is required.
 
 ## Quick start
 
-1. Add the script to every page of your documentation site, before the closing `</body>` tag:
+The `dist/` directory contains the files you need:
+
+- `do11y.js` -- the main script
+- `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
+
+1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+
+2. Add both scripts to every page, with the config file loading first:
 
 ```html
+<script src="/path/to/do11y-config.js"></script>
 <script src="/path/to/do11y.js"></script>
 ```
 
-2. Configure your Axiom credentials. You can either edit the `config` object at the top of `do11y.js` directly, or inject values via HTML `<meta>` tags:
+For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
+
+3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+
+Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
+
+### Alternative: meta tags
+
+If you only need to set the essentials, you can use meta tags instead of a config file:
 
 ```html
 <meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
@@ -30,19 +46,21 @@ No GDPR consent banner is required.
 <meta name="axiom-do11y-framework" content="mintlify">
 ```
 
+Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
+
 3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 ## Configuration
 
-All options live in the `config` object at the top of `do11y.js`.
+All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tags, or the `config` object at the top of `do11y.js`. Using the config file or meta tags is recommended so you can update `do11y.js` without losing your settings.
 
 ### Axiom connection
 
 | Option | Default | Description |
 |---|---|---|
-| `axiom-domain` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
-| `dataset-name` | `'DATASET_NAME'` | Target Axiom dataset. |
-| `api-token` | `'API_TOKEN'` | Ingest-only API token. |
+| `axiomHost` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
+| `axiomDataset` | `'DATASET_NAME'` | Target Axiom dataset. |
+| `axiomToken` | `'API_TOKEN'` | Ingest-only API token. |
 
 ### Behavior
 
@@ -107,7 +125,7 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 
 | Event | Description | Key fields |
 |---|---|---|
-| `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `isFirstPage`, `previousPath` |
+| `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `referrerCategory`, `aiPlatform`, `isFirstPage`, `previousPath` |
 | `link_click` | Internal, external, anchor, or email link click. | `linkType`, `targetUrl`, `linkText`, `linkContext`, `linkSection`, `linkIndex` |
 | `scroll_depth` | User scrolls past a configured threshold. | `threshold`, `scrollPercent` |
 | `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth` |
@@ -125,6 +143,7 @@ Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `tit
 
 See [QUERIES.md](QUERIES.md) for APL queries to analyze your documentation, including:
 
+- AI traffic detection and trends
 - Traffic sources and entry points
 - Page engagement and scroll completion
 - Where users get stuck (exit pages, low engagement)
@@ -241,6 +260,21 @@ SKIP_INSTALL=1 npm run test-integrations
 | `search_opened` | 0 (best-effort) |
 | `code_copied` | 0 (best-effort) |
 
+## AI traffic detection
+
+Do11y classifies referrer domains to detect traffic from AI platforms such as ChatGPT, Perplexity, Claude, Gemini, Copilot, DeepSeek, and others. Each `page_view` event includes:
+
+| Field | Values | Description |
+|---|---|---|
+| `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
+| `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
+
+This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. No fingerprinting, user-agent parsing, or additional data collection is involved.
+
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) do not pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
+
+See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
+
 ## Known limitations
 
 ### Copy-button detection on GitBook
@@ -256,6 +290,43 @@ The selectors work on sites using the standard themes of each supported framewor
 ### Framework selector drift
 
 CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.js` and `test-queries.js`) exist specifically to catch this. Run them periodically to verify selectors still match.
+
+## Automatic sync to your docs repo
+
+The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. This keeps the copy of `do11y.js` in your docs site in sync without manual copying.
+
+### Setup
+
+Configure the workflow in your fork or copy of this repo under **Settings > Secrets and variables > Actions**:
+
+**Variables:**
+
+| Variable | Example | Description |
+|---|---|---|
+| `DOCS_REPO` | `axiomhq/docs` | Target docs repo in `owner/name` format. |
+| `DOCS_DEST_PATH` | `styles/do11y.js` | Path where `do11y.js` lives in the target repo. |
+
+**Secrets:**
+
+| Secret | Description |
+|---|---|
+| `DOCS_REPO_TOKEN` | A GitHub Personal Access Token with `contents: write` and `pull_requests: write` permissions on the target docs repo. |
+
+To create the token: go to **GitHub > Settings > Developer settings > Fine-grained tokens**, create a token scoped to your docs repo with the permissions above, and store it as `DOCS_REPO_TOKEN` in this repo's action secrets.
+
+### Creating a release
+
+Tag and release to trigger the sync:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+gh release create v1.1.0
+```
+
+The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+
+The workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
 
 ## License
 

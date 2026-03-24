@@ -18,13 +18,18 @@
  * 
  * No GDPR consent banner required.
  * 
- * Configuration:
- * Set `axiom-domain`, `api-token`, and `dataset-name` in the config
- * object below, or in an HTML <meta> tag:
- * <meta name="axiom-do11y-domain" content="axiom-domain">
- * <meta name="axiom-do11y-token" content="api-token">
- * <meta name="axiom-do11y-dataset" content="dataset-name">
- * <meta name="axiom-do11y-framework" content="mintlify">
+ * Configuration (in order of precedence):
+ * 1. HTML <meta> tags:
+ *    <meta name="axiom-do11y-domain" content="axiom-domain">
+ *    <meta name="axiom-do11y-token" content="api-token">
+ *    <meta name="axiom-do11y-dataset" content="dataset-name">
+ *    <meta name="axiom-do11y-framework" content="mintlify">
+ * 2. window.Do11yConfig object (set in a separate script before this file):
+ *    window.Do11yConfig = { axiomToken: '...', framework: 'mintlify' };
+ * 3. The config object below (defaults).
+ *
+ * Using meta tags or window.Do11yConfig is recommended so you can
+ * update do11y.js without losing your settings.
  */
 
 (function() {
@@ -44,12 +49,12 @@
     //   US East 1 (AWS):    'us-east-1.aws.edge.axiom.co'
     //   EU Central 1 (AWS): 'eu-central-1.aws.edge.axiom.co'
     // For more information, see https://axiom.co/docs/reference/edge-deployments
-    'axiom-domain': 'AXIOM_DOMAIN',
+    axiomHost: 'AXIOM_DOMAIN',
     // Dataset name - update this to your Axiom dataset
-    'dataset-name': 'DATASET_NAME',
+    axiomDataset: 'DATASET_NAME',
     // API token for ingest - use a token with ONLY ingest permissions
     // IMPORTANT: Create a restricted token that can only ingest to this dataset
-    'api-token': "API_TOKEN",
+    axiomToken: 'API_TOKEN',
     // Enable debug logging to console
     debug: false,
     // Batch events and send periodically (milliseconds)
@@ -429,6 +434,69 @@
   }
 
   /**
+   * Known AI platform referrer patterns.
+   * Each entry maps a substring found in the referrer hostname to an AI
+   * platform label. Order matters: first match wins.
+   */
+  const AI_REFERRER_PATTERNS = [
+    { match: 'chatgpt',    platform: 'ChatGPT' },
+    { match: 'chat.com',   platform: 'ChatGPT' },
+    { match: 'openai',     platform: 'ChatGPT' },
+    { match: 'perplexity', platform: 'Perplexity' },
+    { match: 'claude.ai',  platform: 'Claude' },
+    { match: 'anthropic',  platform: 'Claude' },
+    { match: 'gemini',     platform: 'Gemini' },
+    { match: 'copilot',    platform: 'Copilot' },
+    { match: 'deepseek',   platform: 'DeepSeek' },
+    { match: 'meta.ai',    platform: 'Meta AI' },
+    { match: 'grok',       platform: 'Grok' },
+    { match: 'x.ai',       platform: 'Grok' },
+    { match: 'mistral',    platform: 'Mistral' },
+    { match: 'you.com',    platform: 'You.com' },
+    { match: 'phind',      platform: 'Phind' },
+  ];
+
+  /**
+   * Classify a referrer hostname into a traffic source category.
+   * Returns { referrerCategory, aiPlatform } where aiPlatform is null
+   * for non-AI traffic.
+   */
+  function classifyReferrer(hostname) {
+    if (!hostname || hostname === 'direct') {
+      return { referrerCategory: 'direct', aiPlatform: null };
+    }
+    if (hostname === 'internal') {
+      return { referrerCategory: 'internal', aiPlatform: null };
+    }
+    if (hostname === 'unknown') {
+      return { referrerCategory: 'unknown', aiPlatform: null };
+    }
+
+    var h = hostname.toLowerCase();
+
+    for (var i = 0; i < AI_REFERRER_PATTERNS.length; i++) {
+      if (h.indexOf(AI_REFERRER_PATTERNS[i].match) !== -1) {
+        return { referrerCategory: 'ai', aiPlatform: AI_REFERRER_PATTERNS[i].platform };
+      }
+    }
+
+    if (/google\.|bing\.|baidu\.|yandex\.|duckduckgo\.|yahoo\./.test(h)) {
+      return { referrerCategory: 'search-engine', aiPlatform: null };
+    }
+    if (/github\.|gitlab\.|bitbucket\./.test(h)) {
+      return { referrerCategory: 'code-host', aiPlatform: null };
+    }
+    if (/stackoverflow\.|stackexchange\.|reddit\.|news\.ycombinator\./.test(h)) {
+      return { referrerCategory: 'community', aiPlatform: null };
+    }
+    if (/twitter\.|x\.com|linkedin\.|facebook\.|threads\.net/.test(h)) {
+      return { referrerCategory: 'social', aiPlatform: null };
+    }
+
+    return { referrerCategory: 'other', aiPlatform: null };
+  }
+
+  /**
    * Get referrer domain only (not full URL for privacy)
    */
   function getReferrerDomain() {
@@ -531,7 +599,7 @@
    * Validate configuration before sending
    */
   function validateConfig() {
-    if (!config['api-token']) {
+    if (!config.axiomToken) {
       if (config.debug) {
         console.warn('[Axiom Do11y] No API token configured');
       }
@@ -539,7 +607,7 @@
     }
 
     // Validate token format (basic check)
-    if (typeof config['api-token'] !== 'string' || config['api-token'].length < 10) {
+    if (typeof config.axiomToken !== 'string' || config.axiomToken.length < 10) {
       if (config.debug) {
         console.warn('[Axiom Do11y] Invalid token format');
       }
@@ -547,15 +615,15 @@
     }
 
     // Validate domain (must be a valid hostname, no protocol or path)
-    if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(config['axiom-domain'])) {
+    if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(config.axiomHost)) {
       if (config.debug) {
-        console.warn('[Axiom Do11y] Invalid edge deployment domain:', config['axiom-domain']);
+        console.warn('[Axiom Do11y] Invalid edge deployment domain:', config.axiomHost);
       }
       return false;
     }
 
     // Validate dataset name (alphanumeric, hyphens, underscores)
-    if (!/^[a-zA-Z0-9_-]+$/.test(config['dataset-name'])) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(config.axiomDataset)) {
       if (config.debug) {
         console.warn('[Axiom Do11y] Invalid dataset name');
       }
@@ -586,7 +654,7 @@
     const events = eventQueue.slice();
     eventQueue = [];
 
-    const url = 'https://' + config['axiom-domain'] + '/v1/ingest/' + encodeURIComponent(config['dataset-name']);
+    const url = 'https://' + config.axiomHost + '/v1/ingest/' + encodeURIComponent(config.axiomDataset);
 
     sendEvents(url, events, retriesLeft);
   }
@@ -599,7 +667,7 @@
     fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + config['api-token'],
+        'Authorization': 'Bearer ' + config.axiomToken,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(events),
@@ -657,7 +725,7 @@
     const events = eventQueue;
     eventQueue = [];
 
-    const url = 'https://' + config['axiom-domain'] + '/v1/ingest/' + encodeURIComponent(config['dataset-name']);
+    const url = 'https://' + config.axiomHost + '/v1/ingest/' + encodeURIComponent(config.axiomDataset);
 
     // Try sendBeacon first (most reliable for page unload)
     // Note: sendBeacon can't send auth headers, so we encode token in URL if needed
@@ -666,7 +734,7 @@
       fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + config['api-token'],
+          'Authorization': 'Bearer ' + config.axiomToken,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(events),
@@ -691,8 +759,13 @@
   function trackPageView() {
     const session = updatePageSequence(window.location.pathname);
     
+    const referrerDomain = getReferrerDomain();
+    const referrerInfo = classifyReferrer(referrerDomain);
+
     queueEvent('page_view', {
-      referrerDomain: getReferrerDomain(),
+      referrerDomain: referrerDomain,
+      referrerCategory: referrerInfo.referrerCategory,
+      aiPlatform: referrerInfo.aiPlatform,
       isFirstPage: session.pageCount === 1,
       previousPath: session.pageSequence.length > 1 
         ? session.pageSequence[session.pageSequence.length - 2].path 
@@ -1073,18 +1146,30 @@
     document.addEventListener('click', function(e) {
       const copyButton = e.target.closest(config.copyButtonSelector);
       if (copyButton) {
-        const codeBlock = copyButton.closest(config.codeBlockSelector);
-        const language = codeBlock?.getAttribute('data-language') || 
-                         codeBlock?.className.match(/language-(\w+)/)?.[1] || 
+        const codeBlock = copyButton.closest(config.codeBlockSelector) ||
+                          copyButton.closest('div, section')?.querySelector('pre') ||
+                          copyButton.parentElement?.querySelector('pre');
+        const codeEl = codeBlock?.tagName === 'PRE'
+                         ? codeBlock.querySelector('code')
+                         : codeBlock?.querySelector('code[class*="language-"]') || codeBlock?.querySelector('code');
+
+        const language = codeBlock?.getAttribute('language') ||
+                         codeBlock?.getAttribute('data-language') ||
+                         codeBlock?.getAttribute('data-lang') ||
+                         codeBlock?.className.match(/language-(\w+)/)?.[1] ||
+                         codeEl?.getAttribute('language') ||
+                         codeEl?.getAttribute('data-language') ||
+                         codeEl?.getAttribute('data-lang') ||
+                         codeEl?.className.match(/language-(\w+)/)?.[1] ||
                          'unknown';
-        
+
         queueEvent('code_copied', {
           language: language,
           codeSection: sanitizeText(getNearestHeading(codeBlock || copyButton), 100),
           codeBlockIndex: getCodeBlockIndex(codeBlock),
         });
       }
-    });
+    }, true);
   }
 
   // ============================================================
@@ -1218,6 +1303,8 @@
   function setupTocClickTracking() {
     if (!config.trackTocClicks) return;
 
+    // Use capture phase so the event is seen even if the framework
+    // calls stopPropagation() during the bubble phase.
     document.addEventListener('click', function(e) {
       var link = e.target.closest('a');
       if (!link) return;
@@ -1256,7 +1343,7 @@
         headingLevel: headingLevel,
         tocPosition: tocPosition,
       });
-    });
+    }, true);
   }
 
   // ============================================================
@@ -1356,16 +1443,31 @@
    * Initialize do11y
    */
   function init() {
+    // Apply external config (set window.Do11yConfig before loading do11y.js)
+    if (window.Do11yConfig && typeof window.Do11yConfig === 'object') {
+      for (var key in window.Do11yConfig) {
+        if (window.Do11yConfig.hasOwnProperty(key) && config.hasOwnProperty(key)) {
+          config[key] = window.Do11yConfig[key];
+        }
+      }
+    }
+
+    // Meta tags override both defaults and Do11yConfig
+    var metaDomain = document.querySelector('meta[name="axiom-do11y-domain"]');
+    if (metaDomain) {
+      config.axiomHost = metaDomain.getAttribute('content');
+    }
+
     // Check for token in a meta tag (secure server-side injection)
     var metaToken = document.querySelector('meta[name="axiom-do11y-token"]');
     if (metaToken) {
-      config['api-token'] = metaToken.getAttribute('content');
+      config.axiomToken = metaToken.getAttribute('content');
     }
 
     // Check for dataset override
     var metaDataset = document.querySelector('meta[name="axiom-do11y-dataset"]');
     if (metaDataset) {
-      config['dataset-name'] = metaDataset.getAttribute('content');
+      config.axiomDataset = metaDataset.getAttribute('content');
     }
 
     // Check for debug mode
@@ -1394,9 +1496,9 @@
 
     if (config.debug) {
       console.log('[Axiom Do11y] Initializing with config:', {
-        endpoint: config['axiom-domain'],
-        dataset: config['dataset-name'],
-        hasToken: !!config['api-token'],
+        endpoint: config.axiomHost,
+        dataset: config.axiomDataset,
+        hasToken: !!config.axiomToken,
         framework: config.framework,
         allowedDomains: config.allowedDomains,
         respectDNT: config.respectDNT,
@@ -1413,7 +1515,7 @@
     }
 
     // Warn if no token (but don't fail - allows development without token)
-    if (!config['api-token']) {
+    if (!config.axiomToken) {
       if (config.debug) {
         console.warn('[Axiom Do11y] No API token configured. Events will not be sent.');
         console.warn('[Axiom Do11y] Add <meta name="axiom-do11y-token" content="api-token"> to enable.');
@@ -1511,9 +1613,9 @@
     // Read-only config access (don't expose token)
     getConfig: function() {
       return {
-        endpoint: config['axiom-domain'],
-        dataset: config['dataset-name'],
-        hasToken: !!config['api-token'],
+        endpoint: config.axiomHost,
+        dataset: config.axiomDataset,
+        hasToken: !!config.axiomToken,
         debug: config.debug,
         isDisabled: isDisabled,
         allowedDomains: config.allowedDomains,
@@ -1530,7 +1632,7 @@
     cleanup: cleanup,
     // Check if do11y is enabled
     isEnabled: function() {
-      return !isDisabled && !!config['api-token'];
+      return !isDisabled && !!config.axiomToken;
     },
     // Get queue size (for debugging)
     getQueueSize: function() {
