@@ -88,11 +88,10 @@ const FRAMEWORKS = {
     port: 4003,
     type: 'npm',
     dir: path.join(SITES_DIR, 'vitepress'),
-    do11yDest: path.join(SITES_DIR, 'vitepress', '.vitepress', 'dist', 'do11y.js'),
-    buildCmd: 'npm run build',
+    do11yDest: path.join(SITES_DIR, 'vitepress', 'public', 'do11y.js'),
     startCmd: 'npm',
     startArgs: ['run', 'start'],
-    readyPattern: /localhost:4003/i,
+    readyPattern: /vitepress.*started|localhost:4003/i,
     startPage: '/',
     guidePage: '/guide',
   },
@@ -555,9 +554,7 @@ function validateEvents(framework, events) {
   }
   const browser = await puppeteer.launch({
     headless: true,
-    args: process.env.CI
-      ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-      : [],
+    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
   });
 
   const servers = [];       // track servers to shut down later
