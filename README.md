@@ -13,11 +13,17 @@ Do11y collects anonymous usage data without:
 
 No GDPR consent banner is required.
 
+## Prerequisites
+
+1. [Create an Axiom account](https://app.axiom.co/register).
+1. [Create a dataset in Axiom](https://axiom.co/docs/reference/datasets#create-dataset) to store observability data for your documentation site.
+1. [Create an API token in Axiom](https://axiom.co/docs/reference/tokens) with **ingest-only** permissions scoped to the dataset.
+
 ## Quick start
 
 ### Option 1: CDN (recommended)
 
-Add the meta tags and script to every page of your docs site:
+Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
 
 ```html
 <meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
@@ -27,9 +33,29 @@ Add the meta tags and script to every page of your docs site:
 <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
 ```
 
-Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset. To pin a specific version, replace `@1.0.0` with the desired version tag.
 
-Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`. To pin a specific version, replace `@1.0.0` with the desired version tag.
+#### Advanced configuration via CDN
+
+Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) — such as scroll thresholds, tracking toggles, or custom selectors — set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
+
+```html
+<script>
+window.Do11yConfig = {
+  axiomHost: 'us-east-1.aws.edge.axiom.co',
+  axiomToken: 'xaat-your-ingest-token',
+  axiomDataset: 'do11y',
+  framework: 'vitepress',
+  scrollThresholds: [25, 50, 75, 100],
+  trackFeedback: false,
+  sectionVisibleThreshold: 5,
+  // Any option from the Configuration table below can be set here
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
 
 ### Option 2: Self-host
 
@@ -41,8 +67,7 @@ The `dist/` directory contains the files you need:
 - `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
 
 1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
-
-2. Add both scripts to every page, with the config file loading first:
+1. Add both scripts to every page, with the config file loading first:
 
 ```html
 <script src="/path/to/do11y-config.js"></script>
@@ -50,8 +75,6 @@ The `dist/` directory contains the files you need:
 ```
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
-
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
 
