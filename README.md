@@ -63,14 +63,15 @@ When both are present, meta tags take precedence over `window.Do11yConfig`, whic
 
 If you cannot use a CDN, self-host the script instead.
 
-The built files are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) (download `do11y.js` and `do11y-config.example.js` from the release assets), or from the npm package:
+The built bundles (`do11y.js`, `do11y.min.js`) are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
 
 ```bash
 npm install @axiomhq/do11y
-# files are in node_modules/@axiomhq/do11y/dist/
+# Bundles: node_modules/@axiomhq/do11y/dist/do11y.js (and do11y.min.js)
+# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.js
 ```
 
-1. Copy `do11y.js` and `do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
 1. Add both scripts to every page, with the config file loading first:
 
 ```html
@@ -375,6 +376,8 @@ The sync workflow only replaces `do11y.js` itself. Your `do11y-config.js` and me
 do11y/
 ├── src/
 │   └── do11y.ts          ← TypeScript source
+├── examples/
+│   └── do11y-config.example.js  ← self-host config template (tracked in git)
 ├── dist/                  ← built output (not committed to git)
 │   ├── do11y.js
 │   └── do11y.min.js
@@ -400,12 +403,12 @@ do11y/
 
 ```bash
 npm install
-npm run build   # outputs dist/do11y.js and dist/do11y.min.js
+npm run build   # outputs dist/do11y.js and dist/do11y.min.js (see examples/ for config template)
 npm run check   # TypeScript type checking
 npm run lint    # oxlint
 ```
 
-All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control.
+All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control. The self-host config template lives in `examples/do11y-config.example.js` and is published with the package.
 
 ## License
 
