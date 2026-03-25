@@ -565,7 +565,9 @@ const EXPECTED_EVENTS = {
   link_click: { min: 1 },
   page_exit: { min: 1 },
   expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
-  toc_click: { min: 0 },            // best-effort — no on-page TOC in GitBook static
+  toc_click: { min: 0 },            // best-effort — GitBook static has no on-page TOC;
+                                    // VitePress has one but synthetic clicks can't reliably
+                                    // fire do11y's listener due to Vue's reactive re-rendering
   feedback: { min: 0 },             // best-effort — only GitBook has a native feedback widget
   section_visible: { min: 1 },      // sectionVisibleThreshold: 1 + 2s sleep guarantees this
 };

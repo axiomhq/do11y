@@ -291,7 +291,7 @@ SKIP_INSTALL=1 npm run test-integrations
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
 | `expand_collapse` | 0 | best-effort — requires `<details>` in DOM |
-| `toc_click` | 0 | best-effort — no on-page TOC in GitBook static |
+| `toc_click` | 0 | best-effort — GitBook static has no on-page TOC; VitePress TOC click cannot be synthesised in the automated test (Vue's reactive rendering replaces the link node before the synthetic event fires) |
 | `search_opened` | 0 | best-effort — no search button in GitBook static build |
 | `code_copied` | 0 | best-effort — copy buttons not identifiable in GitBook |
 | `feedback` | 0 | best-effort — only GitBook has a native feedback widget |
