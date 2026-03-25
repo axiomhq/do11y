@@ -1,6 +1,8 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. A single, dependency-free JavaScript file that tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+Documentation observability for Axiom. Tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+
+The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`) and the built output is produced by [rolldown](https://rolldown.rs).
 
 ## Privacy
 
@@ -61,12 +63,14 @@ When both are present, meta tags take precedence over `window.Do11yConfig`, whic
 
 If you cannot use a CDN, self-host the script instead.
 
-The `dist/` directory contains the files you need:
+The built files are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) (download `do11y.js` and `do11y-config.example.js` from the release assets), or from the npm package:
 
-- `do11y.js` -- the main script
-- `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
+```bash
+npm install @axiomhq/do11y
+# files are in node_modules/@axiomhq/do11y/dist/
+```
 
-1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Copy `do11y.js` and `do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
 1. Add both scripts to every page, with the config file loading first:
 
 ```html
@@ -76,11 +80,11 @@ The `dist/` directory contains the files you need:
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
+Do not edit `do11y.js` directly — it is a build artifact and will be overwritten when you update to a new release.
 
 ## Configuration
 
-All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tags, or the `config` object at the top of `do11y.js`. Using the config file or meta tags is recommended so you can update `do11y.js` without losing your settings.
+All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags. Do not edit `do11y.js` directly — it is a build artifact and will be overwritten on the next release.
 
 ### Axiom connection
 
@@ -321,7 +325,7 @@ CSS selectors are based on each framework's current DOM output and may break whe
 
 ## Automatic sync to your docs repo
 
-The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. This keeps the copy of `do11y.js` in your docs site in sync without manual copying.
+The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. The workflow builds `dist/do11y.js` from source and then copies it to the configured destination, keeping the copy in your docs site in sync without manual copying.
 
 ### Setup
 
@@ -344,7 +348,7 @@ To create the token: go to **GitHub > Settings > Developer settings > Fine-grain
 
 ### Creating a release
 
-Tag and release to trigger the sync:
+Bump the version in `package.json`, then tag and release:
 
 ```bash
 git tag v1.1.0
@@ -352,9 +356,52 @@ git push origin v1.1.0
 gh release create v1.1.0
 ```
 
-The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+Publishing a release triggers two workflows in parallel:
 
-The workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+- **`publish.yml`** — builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`.
+- **`sync-to-docs.yml`** — builds the TypeScript source, then opens a PR in your configured docs repo to update `do11y.js` there.
+
+The sync workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+
+## Development
+
+### Repository layout
+
+```
+do11y/
+├── src/
+│   └── do11y.ts          ← TypeScript source
+├── dist/                  ← built output (not committed to git)
+│   ├── do11y.js
+│   └── do11y.min.js
+├── package.json
+├── tsconfig.json
+├── rolldown.config.ts
+├── .oxlintrc.json
+└── .github/workflows/
+    ├── publish.yml        ← npm publish on release
+    └── sync-to-docs.yml   ← sync built do11y.js to docs repo on release
+```
+
+### Toolchain
+
+| Tool | Purpose |
+|---|---|
+| [TypeScript](https://www.typescriptlang.org) | Type checking (`npm run check`) |
+| [rolldown](https://rolldown.rs) | Bundling to IIFE (`npm run build`) |
+| [oxlint](https://oxc.rs/docs/guide/usage/linter) | Linting (`npm run lint`) |
+| [oxfmt](https://oxc.rs/docs/guide/usage/formatter) | Formatting (`npm run format`) |
+
+### Local setup
+
+```bash
+npm install
+npm run build   # outputs dist/do11y.js and dist/do11y.min.js
+npm run check   # TypeScript type checking
+npm run lint    # oxlint
+```
+
+All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control.
 
 ## License
 
