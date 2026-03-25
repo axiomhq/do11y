@@ -2,14 +2,15 @@
  * Do11y integration test runner.
  *
  * Loads AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET from .env in this directory.
- * Run: npm test (or node run.js from this directory)
+ * Run: npm test (or node test-integrations.js from this directory)
  *
  * For each supported framework, this script:
- *   1. Scaffolds a minimal documentation site with do11y.js injected
- *   2. Starts the framework's dev server
- *   3. Drives Puppeteer through a set of user interactions
- *   4. Waits for events to flush to Axiom
- *   5. Queries the Axiom API to validate that the expected events arrived
+ *   1. Builds dist/do11y.js from source if it is not already present
+ *   2. Scaffolds a minimal documentation site with do11y.js injected
+ *   3. Starts the framework's dev server
+ *   4. Drives Puppeteer through a set of user interactions
+ *   5. Waits for events to flush to Axiom
+ *   6. Queries the Axiom API to validate that the expected events arrived
  *
  * Required (set in .env in this directory):
  *   AXIOM_DOMAIN      — Axiom domain (e.g. axiom.co or dev.axiomtestlabs.co)
@@ -19,6 +20,7 @@
  * Optional (can override in .env or shell):
  *   FRAMEWORKS      — Comma-separated list of frameworks to test (default: all)
  *   SKIP_INSTALL    — "1" skips install entirely; "0" forces install even if node_modules exists; unset installs only when node_modules is absent
+ *   SKIP_BUILD      — "1" skips the dist/do11y.js build step (use when you have already built)
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
@@ -33,6 +35,7 @@ const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
 const AXIOM_DATASET = process.env.AXIOM_DATASET;
 const SKIP_INSTALL = process.env.SKIP_INSTALL === '1';
 const FORCE_INSTALL = process.env.SKIP_INSTALL === '0';
+const SKIP_BUILD = process.env.SKIP_BUILD === '1';
 
 const DO11Y_SRC = path.resolve(__dirname, '../dist/do11y.js');
 const SITES_DIR = path.join(__dirname, 'sites');
@@ -115,21 +118,46 @@ function warn(msg) { console.log(`\x1b[33m[runner]\x1b[0m ${msg}`); }
 function fail(msg) { console.log(`\x1b[31m[runner]\x1b[0m ${msg}`); }
 
 function patchDo11y(destPath, framework, testRunId) {
-  let src = fs.readFileSync(DO11Y_SRC, 'utf8');
-  // Trim to guard against trailing newlines from copy-pasting into secret fields
-  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN.trim()}'`);
-  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET.trim()}'`);
-  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN.trim()}'`);
-  // allowedDomains defaults to null, no replacement needed
-  src = src.replace('debug: false', 'debug: true');
-  // Inject testRunId and framework into every event
-  src = src.replace(
-    'eventType: eventType,',
-    `eventType: eventType,\n      testRunId: '${testRunId}',\n      testFramework: '${framework}',`
-  );
+  const src = fs.readFileSync(DO11Y_SRC, 'utf8');
+
+  // Prepend a window.Do11yConfig block so credentials never need to be
+  // string-replaced inside the built artifact (resilient to minification).
+  const configBlock = `window.Do11yConfig = {
+  axiomHost: '${AXIOM_DOMAIN.trim()}',
+  axiomDataset: '${AXIOM_DATASET.trim()}',
+  axiomToken: '${AXIOM_TOKEN.trim()}',
+  debug: true,
+  allowedDomains: null,
+  // Lower section-visibility threshold so headings visible for ≥1s are recorded.
+  // The test sleeps 2s after page load, which comfortably exceeds this.
+  sectionVisibleThreshold: 1,
+};\n`;
+
+  // Intercept fetch to inject testRunId and testFramework into every ingest
+  // request. This avoids patching compiled source and works regardless of how
+  // rolldown names or formats the event-object literal.
+  const interceptBlock = `(function () {
+  var _fetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    if (typeof url === 'string' && url.includes('/v1/ingest/') && opts && opts.body) {
+      try {
+        var events = JSON.parse(opts.body);
+        events = events.map(function (e) {
+          return Object.assign({}, e, {
+            testRunId: '${testRunId}',
+            testFramework: '${framework}',
+          });
+        });
+        opts = Object.assign({}, opts, { body: JSON.stringify(events) });
+      } catch (_e) { /* ignore */ }
+    }
+    return _fetch(url, opts);
+  };
+}());\n`;
+
   const dir = path.dirname(destPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(destPath, src);
+  fs.writeFileSync(destPath, configBlock + interceptBlock + src);
 }
 
 function injectDo11yTags(dir) {
@@ -257,59 +285,79 @@ function killProc(proc) {
 
 async function runInteractions(browser, baseUrl, fw) {
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
-
-  // Forward browser console output so do11y debug logs are visible in CI
-  page.on('console', (msg) => {
-    const text = msg.text();
-    const type = msg.type();
-    if (text.includes('[Axiom Do11y]') || type === 'error' || type === 'warning') {
-      log(`  [browser:${type}] ${text}`);
-    }
-  });
-  page.on('pageerror', (err) => warn(`  [browser:pageerror] ${err.message}`));
-  page.on('requestfailed', (req) => {
-    warn(`  [browser:requestfailed] ${req.url()} — ${req.failure()?.errorText}`);
-  });
+  // 1440px wide ensures VitePress (≥1280px) and other frameworks render the
+  // aside TOC panel; also benefits any framework with a responsive layout.
+  await page.setViewport({ width: 1440, height: 900 });
 
   // 1. Page view on start page
   log('  → page_view (start page)');
   await page.goto(`${baseUrl}${fw.startPage}`, { waitUntil: 'networkidle2', timeout: 30000 });
-  await sleep(1500);
+  // Sleep 2s so headings in the initial viewport accumulate ≥1s of visibility
+  // (matches the sectionVisibleThreshold: 1 set in the test Do11yConfig).
+  await sleep(2000);
 
-  // Verify do11y.js initialised
-  const do11yState = await page.evaluate(() => ({
-    initialized: !!window.__axiomDo11yInitialized,
-    scriptPresent: !!document.querySelector('script[src*="do11y"]'),
-  }));
-  if (!do11yState.scriptPresent) warn('  ⚠ No do11y script tag found in DOM');
-  if (!do11yState.initialized) warn('  ⚠ window.__axiomDo11yInitialized not set — do11y.js did not load');
+  // 2. Click a TOC link *before* scrolling so the page is at the top, the TOC
+  //    panel is freshly rendered, and the anchor links are reachable.
+  log('  → toc_click');
+  // Find the TOC link via evaluate, mark it, then click via Puppeteer's native
+  // page.click() — the same approach that fixed search_opened. Synthetic
+  // el.click() from evaluate is less reliable for triggering do11y's
+  // capture-phase document listener.
+  const TOC_SELECTORS = [
+    '#table-of-contents',            // Mintlify (id-based, not class-based)
+    '[data-testid="table-of-contents"]',
+    '.table-of-contents',            // Docusaurus
+    '.VPDocAsideOutline',            // VitePress
+    '.md-sidebar--secondary .md-nav', // MkDocs Material
+    '[class*="toc"]',
+    '[class*="outline"]',
+    '[class*="TableOfContents"]',
+    'aside.toc',
+  ];
+  try {
+    const found = await page.evaluate((sels) => {
+      for (const sel of sels) {
+        const toc = document.querySelector(sel);
+        if (!toc) continue;
+        const link = toc.querySelector('a[href^="#"]');
+        if (!link) continue;
+        link.setAttribute('data-do11y-test-toc', '1');
+        return true;
+      }
+      return false;
+    }, TOC_SELECTORS);
+    if (found) {
+      await page.click('[data-do11y-test-toc]');
+    } else {
+      warn('  ⚠ No TOC element found, skipping');
+    }
+  } catch { /* ignore */ }
+  await sleep(500);
 
-  // 2. Scroll to bottom (triggers scroll_depth at 25, 50, 75, 90%)
+  // 3. Scroll to bottom (triggers scroll_depth; also sends headings through
+  //    the IntersectionObserver exit callback → section_visible events)
   log('  → scroll_depth');
   await autoScroll(page);
   await sleep(1000);
 
-  // 3. Click search (triggers search_opened)
+  // 4. Click search (triggers search_opened).
+  //    Uses Puppeteer's native page.click() which dispatches real pointer events,
+  //    more reliably triggering do11y's capture-phase listener than el.click().
   log('  → search_opened');
+  const SEARCH_SEL =
+    '#search-bar-entry, .DocSearch-Button, .nextra-search input, ' +
+    '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
+    'button[aria-label*="search" i]';
   try {
-    const searchClicked = await page.evaluate(() => {
-      const el = document.querySelector(
-        '#search-bar-entry, .DocSearch, .DocSearch-Button, .nextra-search input, ' +
-        '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
-        'input[placeholder*="search" i], button[aria-label*="search" i]'
-      );
-      if (el) { el.click(); return true; }
-      return false;
-    });
-    if (!searchClicked) warn('  ⚠ No search element found, skipping');
-  } catch { /* ignore */ }
+    await page.waitForSelector(SEARCH_SEL, { timeout: 3000 });
+    await page.click(SEARCH_SEL);
+  } catch { warn('  ⚠ No search element found, skipping'); }
   await sleep(500);
   // Close any open dialog/overlay
   await page.keyboard.press('Escape');
   await sleep(300);
 
-  // 4. Click copy button (triggers code_copied)
+  // 5. Click copy button (triggers code_copied)
   log('  → code_copied');
   try {
     const copyClicked = await page.evaluate(() => {
@@ -326,7 +374,7 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 5. Expand a <details> element (triggers expand_collapse)
+  // 6. Expand a <details> element (triggers expand_collapse)
   log('  → expand_collapse');
   try {
     const expanded = await page.evaluate(() => {
@@ -341,26 +389,7 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 6. Click a TOC link (triggers toc_click)
-  log('  → toc_click');
-  try {
-    const tocClicked = await page.evaluate(() => {
-      const toc = document.querySelector(
-        '.table-of-contents, [class*="toc"], [class*="outline"], ' +
-        '[class*="TableOfContents"], .VPDocAsideOutline, ' +
-        '.md-sidebar--secondary .md-nav, aside.toc'
-      );
-      if (toc) {
-        const link = toc.querySelector('a[href^="#"]');
-        if (link) { link.click(); return true; }
-      }
-      return false;
-    });
-    if (!tocClicked) warn('  ⚠ No TOC element found, skipping');
-  } catch { /* ignore */ }
-  await sleep(500);
-
-  // 7. Click feedback button (triggers feedback — only gitbook has this)
+  // 7. Click feedback button (triggers feedback)
   log('  → feedback');
   try {
     const feedbackClicked = await page.evaluate(() => {
@@ -456,6 +485,25 @@ async function autoScroll(page) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ─── Build ───────────────────────────────────────────────────────────────────
+
+function ensureBuild() {
+  if (SKIP_BUILD) {
+    log('SKIP_BUILD=1 — skipping build step');
+    if (!fs.existsSync(DO11Y_SRC)) {
+      fail(`dist/do11y.js not found and SKIP_BUILD=1. Run \`npm run build\` in the repo root first.`);
+      process.exit(1);
+    }
+    return;
+  }
+  log('Building dist/do11y.js from source…');
+  execSync('npm run build', {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'inherit',
+  });
+  log('Build complete\n');
+}
+
 // ─── Axiom query ────────────────────────────────────────────────────────────
 
 async function queryAxiom(testRunId, startTime) {
@@ -512,14 +560,16 @@ async function queryAxiom(testRunId, startTime) {
 const EXPECTED_EVENTS = {
   page_view: { min: 2 },
   scroll_depth: { min: 1 },
-  search_opened: { min: 0 },        // best-effort
-  code_copied: { min: 0 },          // best-effort
+  search_opened: { min: 0 },        // best-effort — no search in GitBook static
+  code_copied: { min: 0 },          // best-effort — no identifiable copy button in GitBook
   link_click: { min: 1 },
   page_exit: { min: 1 },
   expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
-  toc_click: { min: 0 },            // best-effort — requires TOC in DOM
-  feedback: { min: 0 },             // best-effort — only gitbook has widget
-  section_visible: { min: 0 },      // best-effort — requires 3s+ dwell on heading
+  toc_click: { min: 0 },            // best-effort — GitBook static has no on-page TOC;
+                                    // VitePress has one but synthetic clicks can't reliably
+                                    // fire do11y's listener due to Vue's reactive re-rendering
+  feedback: { min: 0 },             // best-effort — only GitBook has a native feedback widget
+  section_visible: { min: 1 },      // sectionVisibleThreshold: 1 + 2s sleep guarantees this
 };
 
 function validateEvents(framework, events) {
@@ -551,6 +601,9 @@ function validateEvents(framework, events) {
     fail('Missing required env vars: AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET');
     process.exit(1);
   }
+
+  // Build dist/do11y.js from TypeScript source before anything else
+  ensureBuild();
 
   const testRunId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const startTime = new Date();

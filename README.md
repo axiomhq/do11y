@@ -1,6 +1,8 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. A single, dependency-free JavaScript file that tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+Documentation observability for Axiom. Tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+
+The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`) and the built output is produced by [rolldown](https://rolldown.rs).
 
 ## Privacy
 
@@ -13,16 +15,64 @@ Do11y collects anonymous usage data without:
 
 No GDPR consent banner is required.
 
+## Prerequisites
+
+1. [Create an Axiom account](https://app.axiom.co/register).
+1. [Create a dataset in Axiom](https://axiom.co/docs/reference/datasets#create-dataset) to store observability data for your documentation site.
+1. [Create an API token in Axiom](https://axiom.co/docs/reference/tokens) with **ingest-only** permissions scoped to the dataset.
+
 ## Quick start
 
-The `dist/` directory contains the files you need:
+### Option 1: CDN (recommended)
 
-- `do11y.js` -- the main script
-- `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
+Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
 
-1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+```html
+<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
+<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
+<meta name="axiom-do11y-dataset" content="do11y">
+<meta name="axiom-do11y-framework" content="mintlify">
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
 
-2. Add both scripts to every page, with the config file loading first:
+Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset. To pin a specific version, replace `@1.0.0` with the desired version tag.
+
+#### Advanced configuration via CDN
+
+Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) — such as scroll thresholds, tracking toggles, or custom selectors — set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
+
+```html
+<script>
+window.Do11yConfig = {
+  axiomHost: 'us-east-1.aws.edge.axiom.co',
+  axiomToken: 'xaat-your-ingest-token',
+  axiomDataset: 'do11y',
+  framework: 'vitepress',
+  scrollThresholds: [25, 50, 75, 100],
+  trackFeedback: false,
+  sectionVisibleThreshold: 5,
+  // Any option from the Configuration table below can be set here
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
+
+### Option 2: Self-host
+
+If you cannot use a CDN, self-host the script instead.
+
+The built bundles (`do11y.js`, `do11y.min.js`) are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
+
+```bash
+npm install @axiomhq/do11y
+# Bundles: node_modules/@axiomhq/do11y/dist/do11y.js (and do11y.min.js)
+# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.js
+```
+
+1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Add both scripts to every page, with the config file loading first:
 
 ```html
 <script src="/path/to/do11y-config.js"></script>
@@ -31,28 +81,11 @@ The `dist/` directory contains the files you need:
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
-
-Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
-
-### Alternative: meta tags
-
-If you only need to set the essentials, you can use meta tags instead of a config file:
-
-```html
-<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
-<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
-<meta name="axiom-do11y-dataset" content="do11y">
-<meta name="axiom-do11y-framework" content="mintlify">
-```
-
-Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
-
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+Do not edit `do11y.js` directly — it is a build artifact and will be overwritten when you update to a new release.
 
 ## Configuration
 
-All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tags, or the `config` object at the top of `do11y.js`. Using the config file or meta tags is recommended so you can update `do11y.js` without losing your settings.
+All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags. Do not edit `do11y.js` directly — it is a build artifact and will be overwritten on the next release.
 
 ### Axiom connection
 
@@ -251,14 +284,18 @@ SKIP_INSTALL=1 npm run test-integrations
 
 **Events validated per framework:**
 
-| Event | Minimum expected |
-|---|---|
-| `page_view` | 2 (start page + guide page) |
-| `scroll_depth` | 1 |
-| `link_click` | 1 |
-| `page_exit` | 1 |
-| `search_opened` | 0 (best-effort) |
-| `code_copied` | 0 (best-effort) |
+| Event | Minimum expected | Notes |
+|---|---|---|
+| `page_view` | 2 | start page + guide page |
+| `scroll_depth` | 1 | |
+| `link_click` | 1 | |
+| `page_exit` | 1 | |
+| `expand_collapse` | 0 | best-effort — requires `<details>` in DOM |
+| `toc_click` | 0 | best-effort — GitBook static has no on-page TOC; VitePress TOC click cannot be synthesised in the automated test (Vue's reactive rendering replaces the link node before the synthetic event fires) |
+| `search_opened` | 0 | best-effort — no search button in GitBook static build |
+| `code_copied` | 0 | best-effort — copy buttons not identifiable in GitBook |
+| `feedback` | 0 | best-effort — only GitBook has a native feedback widget |
+| `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## AI traffic detection
 
@@ -293,7 +330,7 @@ CSS selectors are based on each framework's current DOM output and may break whe
 
 ## Automatic sync to your docs repo
 
-The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. This keeps the copy of `do11y.js` in your docs site in sync without manual copying.
+The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. The workflow builds `dist/do11y.js` from source and then copies it to the configured destination, keeping the copy in your docs site in sync without manual copying.
 
 ### Setup
 
@@ -316,7 +353,7 @@ To create the token: go to **GitHub > Settings > Developer settings > Fine-grain
 
 ### Creating a release
 
-Tag and release to trigger the sync:
+Bump the version in `package.json`, then tag and release:
 
 ```bash
 git tag v1.1.0
@@ -324,9 +361,54 @@ git push origin v1.1.0
 gh release create v1.1.0
 ```
 
-The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+Publishing a release triggers two workflows in parallel:
 
-The workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+- **`publish.yml`** — builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`.
+- **`sync-to-docs.yml`** — builds the TypeScript source, then opens a PR in your configured docs repo to update `do11y.js` there.
+
+The sync workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+
+## Development
+
+### Repository layout
+
+```
+do11y/
+├── src/
+│   └── do11y.ts          ← TypeScript source
+├── examples/
+│   └── do11y-config.example.js  ← self-host config template (tracked in git)
+├── dist/                  ← built output (not committed to git)
+│   ├── do11y.js
+│   └── do11y.min.js
+├── package.json
+├── tsconfig.json
+├── rolldown.config.ts
+├── .oxlintrc.json
+└── .github/workflows/
+    ├── publish.yml        ← npm publish on release
+    └── sync-to-docs.yml   ← sync built do11y.js to docs repo on release
+```
+
+### Toolchain
+
+| Tool | Purpose |
+|---|---|
+| [TypeScript](https://www.typescriptlang.org) | Type checking (`npm run check`) |
+| [rolldown](https://rolldown.rs) | Bundling to IIFE (`npm run build`) |
+| [oxlint](https://oxc.rs/docs/guide/usage/linter) | Linting (`npm run lint`) |
+| [oxfmt](https://oxc.rs/docs/guide/usage/formatter) | Formatting (`npm run format`) |
+
+### Local setup
+
+```bash
+npm install
+npm run build   # outputs dist/do11y.js and dist/do11y.min.js (see examples/ for config template)
+npm run check   # TypeScript type checking
+npm run lint    # oxlint
+```
+
+All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control. The self-host config template lives in `examples/do11y-config.example.js` and is published with the package.
 
 ## License
 
