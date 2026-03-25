@@ -299,20 +299,38 @@ async function runInteractions(browser, baseUrl, fw) {
   // 2. Click a TOC link *before* scrolling so the page is at the top, the TOC
   //    panel is freshly rendered, and the anchor links are reachable.
   log('  → toc_click');
+  // Find the TOC link via evaluate, mark it, then click via Puppeteer's native
+  // page.click() — the same approach that fixed search_opened. Synthetic
+  // el.click() from evaluate is less reliable for triggering do11y's
+  // capture-phase document listener.
+  const TOC_SELECTORS = [
+    '#table-of-contents',            // Mintlify (id-based, not class-based)
+    '[data-testid="table-of-contents"]',
+    '.table-of-contents',            // Docusaurus
+    '.VPDocAsideOutline',            // VitePress
+    '.md-sidebar--secondary .md-nav', // MkDocs Material
+    '[class*="toc"]',
+    '[class*="outline"]',
+    '[class*="TableOfContents"]',
+    'aside.toc',
+  ];
   try {
-    const tocClicked = await page.evaluate(() => {
-      const toc = document.querySelector(
-        '.table-of-contents, [class*="toc"], [class*="outline"], ' +
-        '[class*="TableOfContents"], .VPDocAsideOutline, ' +
-        '.md-sidebar--secondary .md-nav, aside.toc'
-      );
-      if (toc) {
+    const found = await page.evaluate((sels) => {
+      for (const sel of sels) {
+        const toc = document.querySelector(sel);
+        if (!toc) continue;
         const link = toc.querySelector('a[href^="#"]');
-        if (link) { link.click(); return true; }
+        if (!link) continue;
+        link.setAttribute('data-do11y-test-toc', '1');
+        return true;
       }
       return false;
-    });
-    if (!tocClicked) warn('  ⚠ No TOC element found, skipping');
+    }, TOC_SELECTORS);
+    if (found) {
+      await page.click('[data-do11y-test-toc]');
+    } else {
+      warn('  ⚠ No TOC element found, skipping');
+    }
   } catch { /* ignore */ }
   await sleep(500);
 

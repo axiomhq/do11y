@@ -187,7 +187,7 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
     tabContainerSelector: '[role="tablist"], [class*="tab"]',
-    tocSelector: '[class*="table-of-contents"], [class*="toc"]',
+    tocSelector: '#table-of-contents, [data-testid="table-of-contents"], [class*="table-of-contents"], [class*="toc"]',
     feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   docusaurus: {
