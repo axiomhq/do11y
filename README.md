@@ -15,6 +15,26 @@ No GDPR consent banner is required.
 
 ## Quick start
 
+### Option 1: CDN (recommended)
+
+Add the meta tags and script to every page of your docs site:
+
+```html
+<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
+<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
+<meta name="axiom-do11y-dataset" content="do11y">
+<meta name="axiom-do11y-framework" content="mintlify">
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+
+Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`. To pin a specific version, replace `@1.0.0` with the desired version tag.
+
+### Option 2: Self-host
+
+If you cannot use a CDN, self-host the script instead.
+
 The `dist/` directory contains the files you need:
 
 - `do11y.js` -- the main script
@@ -34,21 +54,6 @@ For frameworks like Mintlify that auto-include all `.js` files in the content di
 3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
-
-### Alternative: meta tags
-
-If you only need to set the essentials, you can use meta tags instead of a config file:
-
-```html
-<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
-<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
-<meta name="axiom-do11y-dataset" content="do11y">
-<meta name="axiom-do11y-framework" content="mintlify">
-```
-
-Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
-
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
 
 ## Configuration
 

@@ -1,0 +1,28 @@
+{
+  "name": "@axiomhq/do11y",
+  "version": "1.0.0",
+  "description": "Documentation observability for Axiom",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rolldown -c rolldown.config.ts",
+    "lint": "oxlint src",
+    "format": "oxfmt src",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "axiom",
+    "analytics",
+    "documentation",
+    "observability"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "rolldown": "latest",
+    "typescript": "latest"
+  }
+}
