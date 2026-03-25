@@ -283,14 +283,18 @@ SKIP_INSTALL=1 npm run test-integrations
 
 **Events validated per framework:**
 
-| Event | Minimum expected |
-|---|---|
-| `page_view` | 2 (start page + guide page) |
-| `scroll_depth` | 1 |
-| `link_click` | 1 |
-| `page_exit` | 1 |
-| `search_opened` | 0 (best-effort) |
-| `code_copied` | 0 (best-effort) |
+| Event | Minimum expected | Notes |
+|---|---|---|
+| `page_view` | 2 | start page + guide page |
+| `scroll_depth` | 1 | |
+| `link_click` | 1 | |
+| `page_exit` | 1 | |
+| `expand_collapse` | 0 | best-effort — requires `<details>` in DOM |
+| `toc_click` | 0 | best-effort — no on-page TOC in GitBook static |
+| `search_opened` | 0 | best-effort — no search button in GitBook static build |
+| `code_copied` | 0 | best-effort — copy buttons not identifiable in GitBook |
+| `feedback` | 0 | best-effort — only GitBook has a native feedback widget |
+| `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## AI traffic detection
 

@@ -128,6 +128,9 @@ function patchDo11y(destPath, framework, testRunId) {
   axiomToken: '${AXIOM_TOKEN.trim()}',
   debug: true,
   allowedDomains: null,
+  // Lower section-visibility threshold so headings visible for ≥1s are recorded.
+  // The test sleeps 2s after page load, which comfortably exceeds this.
+  sectionVisibleThreshold: 1,
 };\n`;
 
   // Intercept fetch to inject testRunId and testFramework into every ingest
@@ -282,70 +285,19 @@ function killProc(proc) {
 
 async function runInteractions(browser, baseUrl, fw) {
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
+  // 1440px wide ensures VitePress (≥1280px) and other frameworks render the
+  // aside TOC panel; also benefits any framework with a responsive layout.
+  await page.setViewport({ width: 1440, height: 900 });
 
   // 1. Page view on start page
   log('  → page_view (start page)');
   await page.goto(`${baseUrl}${fw.startPage}`, { waitUntil: 'networkidle2', timeout: 30000 });
-  await sleep(1500);
+  // Sleep 2s so headings in the initial viewport accumulate ≥1s of visibility
+  // (matches the sectionVisibleThreshold: 1 set in the test Do11yConfig).
+  await sleep(2000);
 
-  // 2. Scroll to bottom (triggers scroll_depth at 25, 50, 75, 90%)
-  log('  → scroll_depth');
-  await autoScroll(page);
-  await sleep(1000);
-
-  // 3. Click search (triggers search_opened)
-  log('  → search_opened');
-  try {
-    const searchClicked = await page.evaluate(() => {
-      const el = document.querySelector(
-        '#search-bar-entry, .DocSearch, .DocSearch-Button, .nextra-search input, ' +
-        '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
-        'input[placeholder*="search" i], button[aria-label*="search" i]'
-      );
-      if (el) { el.click(); return true; }
-      return false;
-    });
-    if (!searchClicked) warn('  ⚠ No search element found, skipping');
-  } catch { /* ignore */ }
-  await sleep(500);
-  // Close any open dialog/overlay
-  await page.keyboard.press('Escape');
-  await sleep(300);
-
-  // 4. Click copy button (triggers code_copied)
-  log('  → code_copied');
-  try {
-    const copyClicked = await page.evaluate(() => {
-      const el = document.querySelector(
-        'button.clean-btn[aria-label*="copy" i], button[class*="copyButton"], ' +
-        '[class*="copy"], button[aria-label*="copy" i], button[title*="copy" i], ' +
-        '.md-clipboard, .md-code__button[title="Copy to clipboard"], ' +
-        '.vp-code-copy, button.copy[title*="Copy"]'
-      );
-      if (el) { el.click(); return true; }
-      return false;
-    });
-    if (!copyClicked) warn('  ⚠ No copy button found, skipping');
-  } catch { /* ignore */ }
-  await sleep(500);
-
-  // 5. Expand a <details> element (triggers expand_collapse)
-  log('  → expand_collapse');
-  try {
-    const expanded = await page.evaluate(() => {
-      const details = document.querySelector('details:not([open])');
-      if (details) {
-        const summary = details.querySelector('summary');
-        if (summary) { summary.click(); return true; }
-      }
-      return false;
-    });
-    if (!expanded) warn('  ⚠ No <details> element found, skipping');
-  } catch { /* ignore */ }
-  await sleep(500);
-
-  // 6. Click a TOC link (triggers toc_click)
+  // 2. Click a TOC link *before* scrolling so the page is at the top, the TOC
+  //    panel is freshly rendered, and the anchor links are reachable.
   log('  → toc_click');
   try {
     const tocClicked = await page.evaluate(() => {
@@ -364,7 +316,62 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 7. Click feedback button (triggers feedback — only gitbook has this)
+  // 3. Scroll to bottom (triggers scroll_depth; also sends headings through
+  //    the IntersectionObserver exit callback → section_visible events)
+  log('  → scroll_depth');
+  await autoScroll(page);
+  await sleep(1000);
+
+  // 4. Click search (triggers search_opened).
+  //    Uses Puppeteer's native page.click() which dispatches real pointer events,
+  //    more reliably triggering do11y's capture-phase listener than el.click().
+  log('  → search_opened');
+  const SEARCH_SEL =
+    '#search-bar-entry, .DocSearch-Button, .nextra-search input, ' +
+    '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
+    'button[aria-label*="search" i]';
+  try {
+    await page.waitForSelector(SEARCH_SEL, { timeout: 3000 });
+    await page.click(SEARCH_SEL);
+  } catch { warn('  ⚠ No search element found, skipping'); }
+  await sleep(500);
+  // Close any open dialog/overlay
+  await page.keyboard.press('Escape');
+  await sleep(300);
+
+  // 5. Click copy button (triggers code_copied)
+  log('  → code_copied');
+  try {
+    const copyClicked = await page.evaluate(() => {
+      const el = document.querySelector(
+        'button.clean-btn[aria-label*="copy" i], button[class*="copyButton"], ' +
+        '[class*="copy"], button[aria-label*="copy" i], button[title*="copy" i], ' +
+        '.md-clipboard, .md-code__button[title="Copy to clipboard"], ' +
+        '.vp-code-copy, button.copy[title*="Copy"]'
+      );
+      if (el) { el.click(); return true; }
+      return false;
+    });
+    if (!copyClicked) warn('  ⚠ No copy button found, skipping');
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 6. Expand a <details> element (triggers expand_collapse)
+  log('  → expand_collapse');
+  try {
+    const expanded = await page.evaluate(() => {
+      const details = document.querySelector('details:not([open])');
+      if (details) {
+        const summary = details.querySelector('summary');
+        if (summary) { summary.click(); return true; }
+      }
+      return false;
+    });
+    if (!expanded) warn('  ⚠ No <details> element found, skipping');
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 7. Click feedback button (triggers feedback)
   log('  → feedback');
   try {
     const feedbackClicked = await page.evaluate(() => {
@@ -535,14 +542,14 @@ async function queryAxiom(testRunId, startTime) {
 const EXPECTED_EVENTS = {
   page_view: { min: 2 },
   scroll_depth: { min: 1 },
-  search_opened: { min: 0 },        // best-effort
-  code_copied: { min: 0 },          // best-effort
+  search_opened: { min: 0 },        // best-effort — no search in GitBook static
+  code_copied: { min: 0 },          // best-effort — no identifiable copy button in GitBook
   link_click: { min: 1 },
   page_exit: { min: 1 },
   expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
-  toc_click: { min: 0 },            // best-effort — requires TOC in DOM
-  feedback: { min: 0 },             // best-effort — only gitbook has widget
-  section_visible: { min: 0 },      // best-effort — requires 3s+ dwell on heading
+  toc_click: { min: 0 },            // best-effort — no on-page TOC in GitBook static
+  feedback: { min: 0 },             // best-effort — only GitBook has a native feedback widget
+  section_visible: { min: 1 },      // sectionVisibleThreshold: 1 + 2s sleep guarantees this
 };
 
 function validateEvents(framework, events) {
