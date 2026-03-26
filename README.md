@@ -330,26 +330,20 @@ CSS selectors are based on each framework's current DOM output and may break whe
 
 ## Automatic sync to your docs repo
 
-The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. The workflow builds `dist/do11y.js` from source and then copies it to the configured destination, keeping the copy in your docs site in sync without manual copying.
+If you self-host `do11y.js`, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically. Copy it to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
 
 ### Setup
 
-Configure the workflow in your fork or copy of this repo under **Settings > Secrets and variables > Actions**:
+Add two variables in your docs repo under **Settings > Secrets and variables > Actions**:
 
 **Variables:**
 
 | Variable | Example | Description |
 |---|---|---|
-| `DOCS_REPO` | `axiomhq/docs` | Target docs repo in `owner/name` format. |
-| `DOCS_DEST_PATH` | `styles/do11y.js` | Path where `do11y.js` lives in the target repo. |
+| `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
+| `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
 
-**Secrets:**
-
-| Secret | Description |
-|---|---|
-| `DOCS_REPO_TOKEN` | A GitHub Personal Access Token with `contents: write` and `pull_requests: write` permissions on the target docs repo. |
-
-To create the token: go to **GitHub > Settings > Developer settings > Fine-grained tokens**, create a token scoped to your docs repo with the permissions above, and store it as `DOCS_REPO_TOKEN` in this repo's action secrets.
+No secrets are required. The workflow uses the built-in `GITHUB_TOKEN`.
 
 ### Creating a release
 
@@ -361,10 +355,7 @@ git push origin v1.1.0
 gh release create v1.1.0
 ```
 
-Publishing a release triggers two workflows in parallel:
-
-- **`publish.yml`** — builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`.
-- **`sync-to-docs.yml`** — builds the TypeScript source, then opens a PR in your configured docs repo to update `do11y.js` there.
+Publishing a release triggers **`publish.yml`**, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
 
 The sync workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
 
@@ -387,7 +378,7 @@ do11y/
 ├── .oxlintrc.json
 └── .github/workflows/
     ├── publish.yml        ← npm publish on release
-    └── sync-to-docs.yml   ← sync built do11y.js to docs repo on release
+    └── sync-do11y-to-docs.yml   ← weekly update workflow (copy to your docs repo)
 ```
 
 ### Toolchain
