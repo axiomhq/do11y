@@ -202,7 +202,7 @@ AxiomDo11y.version        // Script version
 
 The `tests` directory contains multiple layers of testing.
 
-### Selector tests against live sites (`tests/test-live-sites.js`)
+### Selector tests against live sites (`tests/test-live-sites.ts`)
 
 Runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production.
 
@@ -224,7 +224,7 @@ Sites tested:
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
 
-### Query validation (`tests/test-queries.js`)
+### Query validation (`tests/test-queries.ts`)
 
 Validates that all APL queries in [QUERIES.md](QUERIES.md) are syntactically correct by executing them against the Axiom API.
 
@@ -233,7 +233,7 @@ cd tests
 npm run test-queries
 ```
 
-### Integration tests (`tests/test-integrations.js`)
+### Integration tests (`tests/test-integrations.ts`)
 
 End-to-end tests that install each supported framework, inject `do11y.js`, start a local dev server, drive user interactions via Puppeteer, and then query the Axiom API to verify that events arrived correctly.
 
@@ -326,7 +326,7 @@ The selectors work on sites using the standard themes of each supported framewor
 
 ### Framework selector drift
 
-CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.js` and `test-queries.js`) exist specifically to catch this. Run them periodically to verify selectors still match.
+CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
 ## Automatic sync to your docs repo
 
