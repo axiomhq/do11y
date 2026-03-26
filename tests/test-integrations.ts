@@ -509,16 +509,19 @@ async function autoScroll(page: Page): Promise<void> {
         }
       }
 
-      const getPos = (): number => container ? container.scrollTop : window.scrollY;
-      const getMax = (): number => container
-        ? container.scrollHeight - container.clientHeight
-        : document.body.scrollHeight - window.innerHeight;
-
+      // Inline scroll-position helpers — named arrow function assignments
+      // trigger esbuild's __name helper which is not available in the
+      // browser context when Puppeteer serialises this callback as a string.
       const timer = setInterval(() => {
         if (container) { (container as HTMLElement).scrollTop += distance; }
         else { window.scrollBy(0, distance); }
 
-        if (getPos() >= getMax() - 1) {
+        const scrollPos = container ? container.scrollTop : window.scrollY;
+        const maxScroll = container
+          ? container.scrollHeight - container.clientHeight
+          : document.body.scrollHeight - window.innerHeight;
+
+        if (scrollPos >= maxScroll - 1) {
           clearInterval(timer);
           resolve();
         }
