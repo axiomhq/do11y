@@ -1,19 +1,19 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. Tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+Documentation observability for Axiom. Tracks how people use your documentation (page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions) and sends the data to [Axiom](https://axiom.co).
 
 The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`) and the built output is produced by [rolldown](https://rolldown.rs).
 
 ## Privacy
 
-Do11y collects anonymous usage data without:
+Do11y collects anonymous usage data:
 
-- Cookies (uses `sessionStorage` only — cleared when the browser closes)
-- Personal identifiable information (PII)
-- Device fingerprinting
-- Cross-site tracking
+- No cookies. Do11y uses `sessionStorage` which is cleared when the browser closes.
+- No personal identifiable information (PII).
+- No device fingerprinting.
+- No cross-site tracking.
 
-No GDPR consent banner is required.
+You don't need a GDPR consent banner for using Do11y.
 
 ## Prerequisites
 
@@ -39,7 +39,7 @@ Replace the meta tag values with your Axiom credentials and docs framework. Crea
 
 #### Advanced configuration via CDN
 
-Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) — such as scroll thresholds, tracking toggles, or custom selectors — set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
+Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) such as scroll thresholds, tracking toggles, or custom selectors, set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
 
 ```html
 <script>
@@ -61,7 +61,7 @@ When both are present, meta tags take precedence over `window.Do11yConfig`, whic
 
 ### Option 2: Self-host
 
-If you cannot use a CDN, self-host the script instead.
+If you can't use a CDN, self-host the script.
 
 The built bundles (`do11y.js`, `do11y.min.js`) are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
 
@@ -81,11 +81,11 @@ npm install @axiomhq/do11y
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-Do not edit `do11y.js` directly — it is a build artifact and will be overwritten when you update to a new release.
+Don't edit `do11y.js` directly. It's a build artifact and will be overwritten when you update to a new release.
 
 ## Configuration
 
-All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags. Do not edit `do11y.js` directly — it is a build artifact and will be overwritten on the next release.
+All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags.
 
 ### Axiom connection
 
@@ -286,15 +286,15 @@ SKIP_INSTALL=1 npm run test-integrations
 
 | Event | Minimum expected | Notes |
 |---|---|---|
-| `page_view` | 2 | start page + guide page |
+| `page_view` | 2 | Start page + guide page |
 | `scroll_depth` | 1 | |
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
-| `expand_collapse` | 0 | best-effort — requires `<details>` in DOM |
-| `toc_click` | 0 | best-effort — GitBook static has no on-page TOC; VitePress TOC click cannot be synthesised in the automated test (Vue's reactive rendering replaces the link node before the synthetic event fires) |
-| `search_opened` | 0 | best-effort — no search button in GitBook static build |
-| `code_copied` | 0 | best-effort — copy buttons not identifiable in GitBook |
-| `feedback` | 0 | best-effort — only GitBook has a native feedback widget |
+| `expand_collapse` | 0 | Best-effort, requires `<details>` in DOM |
+| `toc_click` | 0 | Best-effort. GitBook static has no on-page TOC; VitePress TOC click cannot be synthesised in the automated test (Vue's reactive rendering replaces the link node before the synthetic event fires) |
+| `search_opened` | 0 | Best-effort. No search button in GitBook static build |
+| `code_copied` | 0 | Best-effort. Copy buttons not identifiable in GitBook |
+| `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## AI traffic detection
