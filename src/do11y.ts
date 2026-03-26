@@ -341,6 +341,8 @@ interface SessionData {
   startTime: string;
   pageSequence: Array<{ path: string; timestamp: string; index: number }>;
   pageCount: number;
+  referrerCategory: string | null;
+  aiPlatform: string | null;
 }
 
 function generateSessionId(): string {
@@ -386,6 +388,8 @@ function getSession(): SessionData {
       startTime: new Date().toISOString(),
       pageSequence: [],
       pageCount: 0,
+      referrerCategory: null,
+      aiPlatform: null,
     };
     saveSession(session);
   }
@@ -756,6 +760,12 @@ function trackPageView(): void {
   const referrerDomain = getReferrerDomain();
   const referrerInfo = classifyReferrer(referrerDomain);
 
+  if (session.pageCount === 1) {
+    session.referrerCategory = referrerInfo.referrerCategory;
+    session.aiPlatform = referrerInfo.aiPlatform;
+    saveSession(session);
+  }
+
   queueEvent('page_view', {
     referrerDomain,
     referrerCategory: referrerInfo.referrerCategory,
@@ -1001,11 +1011,15 @@ function emitPageExit(): void {
 
   flushVisibleSections();
 
+  const session = getSession();
+
   queueEvent('page_exit', {
     totalTimeSeconds: Math.round(totalTime / 1000),
     activeTimeSeconds: Math.round(totalActiveTime / 1000),
     engagementRatio: Math.round(engagementRatio * 100) / 100,
     maxScrollDepth: maxScroll,
+    referrerCategory: session.referrerCategory,
+    aiPlatform: session.aiPlatform,
   });
 }
 
