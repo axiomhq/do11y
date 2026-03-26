@@ -882,23 +882,9 @@ function setupLinkTracking(): void {
     if (linkType === 'internal' && !config.trackInternalLinks) return;
     if (linkType === 'external' && !config.trackOutboundLinks) return;
 
-    // Strip query parameters from outbound URLs before sending to analytics
-    // to avoid capturing tokens, session IDs, or PII in link query strings.
-    let safeTargetUrl = href;
-    let targetHasParams = false;
-    try {
-      if (href.startsWith('http')) {
-        const parsed = new URL(href);
-        targetHasParams = parsed.search.length > 0;
-        parsed.search = '';
-        safeTargetUrl = parsed.toString();
-      }
-    } catch (_e) { /* leave href as-is for non-absolute URLs */ }
-
     queueEvent('link_click', {
       linkType,
-      targetUrl: safeTargetUrl,
-      targetHasParams,
+      targetUrl: href,
       targetDomain,
       linkText: sanitizeText(link.textContent, 100),
       linkContext: getLinkContext(link),
