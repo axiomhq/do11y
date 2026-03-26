@@ -2,13 +2,13 @@
 
 Documentation observability for Axiom. Tracks how people use your documentation (page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions) and sends the data to [Axiom](https://axiom.co).
 
-The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`) and the built output is produced by [rolldown](https://rolldown.rs).
+The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`). [rolldown](https://rolldown.rs) produces the built output.
 
 ## Privacy
 
 Do11y collects anonymous usage data:
 
-- No cookies. Do11y uses `sessionStorage` which is cleared when the browser closes.
+- No cookies. Do11y uses `sessionStorage`, which the browser clears when it closes.
 - No personal identifiable information (PII).
 - No device fingerprinting.
 - No cross-site tracking.
@@ -21,7 +21,7 @@ You don't need a GDPR consent banner for using Do11y.
 1. [Create a dataset in Axiom](https://axiom.co/docs/reference/datasets#create-dataset) to store observability data for your documentation site.
 1. [Create an API token in Axiom](https://axiom.co/docs/reference/tokens) with **ingest-only** permissions scoped to the dataset.
 
-## Quick start
+## Quickstart
 
 ### Option 1: CDN (recommended)
 
@@ -63,7 +63,7 @@ When both are present, meta tags take precedence over `window.Do11yConfig`, whic
 
 If you can't use a CDN, self-host the script.
 
-The built bundles (`do11y.js`, `do11y.min.js`) are not committed to git. Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
+The repo doesn't include the built bundles (`do11y.js`, `do11y.min.js`). Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
 
 ```bash
 npm install @axiomhq/do11y
@@ -81,7 +81,7 @@ npm install @axiomhq/do11y
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-Don't edit `do11y.js` directly. It's a build artifact and will be overwritten when you update to a new release.
+Don't edit `do11y.js` directly. It's a build artifact and updating to a new release overwrites it.
 
 ## Configuration
 
@@ -164,7 +164,7 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth`, `referrerCategory`, `aiPlatform` |
 | `search_opened` | User opens the search dialog (click or Cmd/Ctrl+K). | `trigger` |
 | `code_copied` | User clicks a code block's copy button. | `language`, `codeSection`, `codeBlockIndex` |
-| `section_visible` | A heading was visible in the viewport long enough to be read. | `heading`, `headingLevel`, `visibleSeconds` |
+| `section_visible` | A heading stayed visible in the viewport long enough for the user to read it. | `heading`, `headingLevel`, `visibleSeconds` |
 | `tab_switch` | User switches a code language/framework tab. | `tabLabel`, `tabGroup`, `isDefault` |
 | `toc_click` | User clicks an entry in the on-page table of contents. | `heading`, `headingLevel`, `tocPosition` |
 | `feedback` | User clicks a "Was this helpful?" button. | `rating` |
@@ -280,7 +280,7 @@ The test covers the following frameworks:
 | `docusaurus` | npm (Docusaurus 3) | 4001 | Full framework install |
 | `nextra` | npm (Next.js + Nextra 3) | 4002 | Full framework install |
 | `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
-| `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python; skipped if unavailable |
+| `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python. Skips if unavailable. |
 
 The test validates the following events per framework:
 
@@ -291,9 +291,9 @@ The test validates the following events per framework:
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
 | `expand_collapse` | 0 | Best-effort, requires `<details>` in DOM |
-| `toc_click` | 0 | Best-effort. GitBook static has no on-page TOC; VitePress TOC click cannot be synthesised in the automated test (Vue's reactive rendering replaces the link node before the synthetic event fires) |
+| `toc_click` | 0 | Best-effort. GitBook static has no on-page TOC. The automated test cannot synthesise a VitePress TOC click (Vue's reactive rendering replaces the link node before the synthetic event fires) |
 | `search_opened` | 0 | Best-effort. No search button in GitBook static build |
-| `code_copied` | 0 | Best-effort. Copy buttons not identifiable in GitBook |
+| `code_copied` | 0 | Best-effort. GitBook exposes no identifiable copy button selectors |
 | `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
@@ -306,9 +306,9 @@ Do11y classifies referrer domains to detect traffic from AI platforms such as Ch
 | `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
 | `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
 
-This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. No fingerprinting, user-agent parsing, or additional data collection is involved.
+This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. Do11y uses no fingerprinting, user-agent parsing, or additional data collection.
 
-**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) do not pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
 
 See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
 
@@ -316,7 +316,7 @@ See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including pe
 
 ### Copy-button detection on GitBook
 
-The `copyButtonSelector` does not match copy buttons on **GitBook** sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
+The `copyButtonSelector` doesn't match copy buttons on GitBook sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
 
 **Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
 
@@ -326,7 +326,7 @@ The selectors work on sites using the standard themes of each supported framewor
 
 ### Framework selector drift
 
-CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
+CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
 ## Automatic sync to your docs repo
 
@@ -355,9 +355,9 @@ git push origin v1.1.0
 gh release create v1.1.0
 ```
 
-Publishing a release triggers **`publish.yml`**, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
+Publishing a release triggers `publish.yml`, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
 
-The sync workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+The sync workflow only replaces `do11y.js` itself and leaves your `do11y-config.js` and meta tags untouched. See [Quickstart](#quickstart) for how to set up configuration separately.
 
 ## Development
 
@@ -369,7 +369,7 @@ do11y/
 │   └── do11y.ts          ← TypeScript source
 ├── examples/
 │   └── do11y-config.example.js  ← self-host config template (tracked in git)
-├── dist/                  ← built output (not committed to git)
+├── dist/                  ← built output (git-ignored)
 │   ├── do11y.js
 │   └── do11y.min.js
 ├── package.json
@@ -399,7 +399,7 @@ npm run check   # TypeScript type checking
 npm run lint    # oxlint
 ```
 
-All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control. The self-host config template lives in `examples/do11y-config.example.js` and is published with the package.
+All source changes go in `src/do11y.ts`. The build produces the `dist/` directory, which git ignores. The self-host config template lives in `examples/do11y-config.example.js` and ships with the package.
 
 ## License
 
