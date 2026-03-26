@@ -111,8 +111,6 @@ export interface Do11yEvent {
 interface AxiomDo11yAPI {
   getConfig: () => object;
   flush: () => void;
-  debug: (enabled?: boolean) => void;
-  cleanup: () => void;
   isEnabled: () => boolean;
   getQueueSize: () => number;
   version: string;
@@ -320,14 +318,46 @@ function shouldDisableTracking(): boolean {
   return false;
 }
 
+/**
+ * Validate a CSS selector string supplied through user configuration.
+ * Returns the selector unchanged if it is syntactically valid, or null
+ * if it is not. This prevents CSS selector injection from attacker-
+ * controlled config values (window.Do11yConfig / meta tags) reaching
+ * querySelectorAll / closest calls.
+ */
+function validateSelector(selector: string | null | undefined): string | null {
+  if (!selector || typeof selector !== 'string') return null;
+  try {
+    document.querySelector(selector);
+    return selector;
+  } catch (_e) {
+    if (config.debug) {
+      console.warn('[Axiom Do11y] Invalid CSS selector rejected:', selector);
+    }
+    return null;
+  }
+}
+
 function sanitizeText(text: string | null | undefined, maxLength?: number): string | null {
   if (!text || typeof text !== 'string') return null;
 
   const limit = maxLength ?? 100;
 
-  let sanitized = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]');
+  let sanitized = text;
+  // Email addresses
+  sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]');
+  // US phone numbers
   sanitized = sanitized.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[phone]');
+  // SSNs
   sanitized = sanitized.replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[redacted]');
+  // Credit card numbers (13–19 digits, optionally space/dash separated)
+  sanitized = sanitized.replace(/\b(?:\d[ -]?){13,19}\b/g, '[card]');
+  // JWTs (three base64url segments separated by dots)
+  sanitized = sanitized.replace(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[token]');
+  // Axiom API tokens and generic bearer-style tokens (xaat-..., xapt-..., etc.)
+  sanitized = sanitized.replace(/\bxa[a-z]{2}-[A-Za-z0-9_-]{20,}/g, '[token]');
+  // Generic long hex secrets (32+ hex chars)
+  sanitized = sanitized.replace(/\b[0-9a-fA-F]{32,}\b/g, '[redacted]');
 
   return sanitized.trim().substring(0, limit);
 }
@@ -335,6 +365,11 @@ function sanitizeText(text: string | null | undefined, maxLength?: number): stri
 // ============================================================
 // Session Management (No Cookies)
 // ============================================================
+// Session data is stored in sessionStorage. sessionStorage is readable
+// by any JavaScript running on the same origin, so it should never
+// contain secrets. The session record holds only an anonymous ID and
+// a path-visit sequence (no query parameters, no PII). It is cleared
+// automatically when the browser tab closes.
 
 interface SessionData {
   id: string;
@@ -346,29 +381,38 @@ interface SessionData {
 }
 
 function generateSessionId(): string {
-  try {
-    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-      return window.crypto.randomUUID();
-    }
-    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
-      const arr = new Uint8Array(16);
-      window.crypto.getRandomValues(arr);
-      arr[6] = (arr[6] & 0x0f) | 0x40;
-      arr[8] = (arr[8] & 0x3f) | 0x80;
-      const hex = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
-      return (
-        hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' +
-        hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
-      );
-    }
-  } catch (_e) {
-    // Fall through to Math.random fallback
+  // Math.random() is not cryptographically secure and must not be used as
+  // a fallback for session ID generation. Both crypto APIs below are
+  // available in every browser that supports fetch (our minimum baseline).
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+    const arr = new Uint8Array(16);
+    window.crypto.getRandomValues(arr);
+    arr[6] = (arr[6] & 0x0f) | 0x40;
+    arr[8] = (arr[8] & 0x3f) | 0x80;
+    const hex = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+    return (
+      hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' +
+      hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
+    );
+  }
+  // crypto is unavailable — return a fixed sentinel so the event is still
+  // recorded but is clearly not a real session ID, rather than using
+  // a predictable Math.random()-based value.
+  return 'no-crypto-00-0000-0000-000000000000';
+}
+
+function isValidSessionData(value: unknown): value is SessionData {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === 'string' && v.id.length > 0 &&
+    typeof v.startTime === 'string' &&
+    Array.isArray(v.pageSequence) &&
+    typeof v.pageCount === 'number'
+  );
 }
 
 function getSession(): SessionData {
@@ -376,7 +420,10 @@ function getSession(): SessionData {
   try {
     const stored = sessionStorage.getItem('axiom_docs_session');
     if (stored) {
-      session = JSON.parse(stored) as SessionData;
+      const parsed: unknown = JSON.parse(stored);
+      if (isValidSessionData(parsed)) {
+        session = parsed;
+      }
     }
   } catch (_e) {
     // sessionStorage not available or parsing error
@@ -623,6 +670,21 @@ function scheduleFlush(): void {
   flushTimeout = setTimeout(flush, config.flushInterval);
 }
 
+/**
+ * Axiom-owned ingest domains. The axiomHost config value MUST be one of
+ * these. This prevents an attacker who can inject a <meta> tag or set
+ * window.Do11yConfig from redirecting requests (and the bearer token) to
+ * an arbitrary server.
+ *
+ * Add new Axiom edge-deployment domains here as they are provisioned.
+ */
+const AXIOM_ALLOWED_HOSTS: ReadonlySet<string> = new Set([
+  'api.axiom.co',
+  'cloud.axiom.co',
+  'us-east-1.aws.edge.axiom.co',
+  'eu-central-1.aws.edge.axiom.co',
+]);
+
 function validateConfig(): boolean {
   if (!config.axiomToken) {
     if (config.debug) {
@@ -638,9 +700,12 @@ function validateConfig(): boolean {
     return false;
   }
 
-  if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(config.axiomHost)) {
+  if (!AXIOM_ALLOWED_HOSTS.has(config.axiomHost)) {
     if (config.debug) {
-      console.warn('[Axiom Do11y] Invalid edge deployment domain:', config.axiomHost);
+      console.warn(
+        '[Axiom Do11y] Untrusted axiomHost "' + config.axiomHost + '". ' +
+        'Must be one of: ' + Array.from(AXIOM_ALLOWED_HOSTS).join(', ')
+      );
     }
     return false;
   }
@@ -817,9 +882,23 @@ function setupLinkTracking(): void {
     if (linkType === 'internal' && !config.trackInternalLinks) return;
     if (linkType === 'external' && !config.trackOutboundLinks) return;
 
+    // Strip query parameters from outbound URLs before sending to analytics
+    // to avoid capturing tokens, session IDs, or PII in link query strings.
+    let safeTargetUrl = href;
+    let targetHasParams = false;
+    try {
+      if (href.startsWith('http')) {
+        const parsed = new URL(href);
+        targetHasParams = parsed.search.length > 0;
+        parsed.search = '';
+        safeTargetUrl = parsed.toString();
+      }
+    } catch (_e) { /* leave href as-is for non-absolute URLs */ }
+
     queueEvent('link_click', {
       linkType,
-      targetUrl: href,
+      targetUrl: safeTargetUrl,
+      targetHasParams,
       targetDomain,
       linkText: sanitizeText(link.textContent, 100),
       linkContext: getLinkContext(link),
@@ -862,12 +941,9 @@ function getNearestHeading(element: Element): string | null {
 }
 
 function getLinkIndex(link: Element, href: string): number {
+  if (typeof CSS === 'undefined' || typeof CSS.escape !== 'function') return 1;
   try {
-    const escapedHref = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-      ? CSS.escape(href)
-      : href.replace(/["\\]/g, '\\$&');
-
-    const allLinks = document.querySelectorAll('a[href="' + escapedHref + '"]');
+    const allLinks = document.querySelectorAll('a[href="' + CSS.escape(href) + '"]');
     for (let i = 0; i < allLinks.length; i++) {
       if (allLinks[i] === link) return i + 1;
     }
@@ -1161,9 +1237,10 @@ function observeHeadings(): void {
   if (!sectionObserver) return;
   const headings = document.querySelectorAll('h2, h3');
   headings.forEach((h, i) => {
-    if (!h.getAttribute('data-do11y-section-id')) {
-      h.setAttribute('data-do11y-section-id', 'section-' + i);
-    }
+    // Always overwrite any pre-existing attribute value. A heading authored
+    // with a crafted data-do11y-section-id could otherwise inject an
+    // unescaped string into the querySelector in flushVisibleSections().
+    h.setAttribute('data-do11y-section-id', 'section-' + i);
     sectionObserver!.observe(h);
   });
 }
@@ -1177,7 +1254,10 @@ function flushVisibleSections(): void {
     if (timer && !timer.reported) {
       const elapsed = now - timer.start;
       if (elapsed >= threshold) {
-        const el = document.querySelector('[data-do11y-section-id="' + id + '"]');
+        const escapedId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(id)
+          : id.replace(/["\\]/g, '\\$&');
+        const el = document.querySelector('[data-do11y-section-id="' + escapedId + '"]');
         if (el) {
           queueEvent('section_visible', {
             heading: sanitizeText(el.textContent?.trim() ?? '', 100),
@@ -1200,11 +1280,12 @@ function setupTabSwitchTracking(): void {
 
   document.addEventListener('click', (e) => {
     let baseSel = '[role="tab"], .tabs button, .tabs a, .tabbed-labels label';
-    if (config.tabContainerSelector) {
+    const safeTabSel = validateSelector(config.tabContainerSelector);
+    if (safeTabSel) {
       baseSel +=
-        ', ' + config.tabContainerSelector + ' button, ' +
-        config.tabContainerSelector + ' a, ' +
-        config.tabContainerSelector + ' label';
+        ', ' + safeTabSel + ' button, ' +
+        safeTabSel + ' a, ' +
+        safeTabSel + ' label';
     }
     const tab = (e.target as Element).closest(baseSel);
     if (!tab) return;
@@ -1242,7 +1323,7 @@ function setupTocClickTracking(): void {
     if (!link) return;
 
     const tocContainer = link.closest(
-      config.tocSelector ??
+      validateSelector(config.tocSelector) ??
       '.table-of-contents, [class*="toc"], [class*="outline"], ' +
       '[class*="TableOfContents"], [class*="page-outline"]'
     );
@@ -1287,7 +1368,7 @@ function setupFeedbackTracking(): void {
     if (!button) return;
 
     const feedbackContainer = button.closest(
-      config.feedbackSelector ??
+      validateSelector(config.feedbackSelector) ??
       '[class*="feedback"], [class*="helpful"], [class*="rating"], ' +
       '[class*="was-this"], [data-feedback]'
     );
@@ -1295,7 +1376,13 @@ function setupFeedbackTracking(): void {
 
     const buttonText = (button.textContent ?? '').trim().toLowerCase();
     const ariaLabel = (button.getAttribute('aria-label') ?? '').toLowerCase();
-    const dataValue = button.getAttribute('data-value') ?? button.getAttribute('data-feedback');
+    const rawDataValue = button.getAttribute('data-value') ?? button.getAttribute('data-feedback');
+    // Constrain data-value to a safe token: alphanumeric + common punctuation,
+    // max 50 chars. Prevents arbitrary DOM-injected strings from reaching the
+    // analytics dataset or a downstream dashboard unescaped.
+    const dataValue = rawDataValue && /^[\w\s.,!?-]{1,50}$/.test(rawDataValue)
+      ? rawDataValue
+      : null;
 
     let rating: string | null = null;
     if (dataValue) {
@@ -1398,8 +1485,6 @@ function init(): void {
 
   if (config.debug) {
     console.log('[Axiom Do11y] Initializing with config:', {
-      endpoint: config.axiomHost,
-      dataset: config.axiomDataset,
       hasToken: !!config.axiomToken,
       framework: config.framework,
       allowedDomains: config.allowedDomains,
@@ -1466,6 +1551,11 @@ function init(): void {
     }
   });
 
+  // Freeze the resolved config so that third-party scripts loaded after
+  // this point cannot mutate axiomHost, axiomToken, or any other field
+  // through window.Do11yConfig or direct property assignment.
+  Object.freeze(config);
+
   if (config.debug) console.log('[Axiom Do11y] Initialized successfully');
 }
 
@@ -1496,19 +1586,20 @@ if (!_alreadyLoaded) {
 }
 
 // Expose API for debugging and integration
+// cleanup() and debug() are intentionally NOT exposed on window.AxiomDo11y.
+// Exposing cleanup() would allow any third-party script to silently stop
+// tracking. Exposing debug() would allow any script to enable verbose
+// console output revealing the endpoint, dataset, and queued event data.
 window.AxiomDo11y = window.AxiomDo11y ?? {
   getConfig: () => ({
     endpoint: config.axiomHost,
     dataset: config.axiomDataset,
     hasToken: !!config.axiomToken,
-    debug: config.debug,
     isDisabled,
     allowedDomains: config.allowedDomains,
     respectDNT: config.respectDNT,
   }),
   flush,
-  debug: (enabled?: boolean) => { config.debug = enabled !== false; },
-  cleanup,
   isEnabled: () => !isDisabled && !!config.axiomToken,
   getQueueSize: () => eventQueue.length,
   version: '1.0.0',
