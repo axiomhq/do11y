@@ -11,20 +11,6 @@
  * Any option from the config object in do11y.js can be set here.
  * See the README for the full list.
  */
-
-declare global {
-  interface Window {
-    Do11yConfig?: Partial<{
-      axiomHost: string;
-      axiomToken: string;
-      axiomDataset: string;
-      framework: string;
-      allowedDomains: string[] | null;
-      [key: string]: unknown;
-    }>;
-  }
-}
-
 window.Do11yConfig = {
   // Required: Axiom ingest endpoint.
   // Use an edge deployment domain for lower latency:
@@ -47,5 +33,3 @@ window.Do11yConfig = {
   // Set to null to allow any domain.
   // allowedDomains: ['docs.example.com'],
 };
-
-export {};
