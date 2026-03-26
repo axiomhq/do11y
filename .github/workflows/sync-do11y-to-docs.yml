@@ -1,4 +1,4 @@
-name: Update do11y.js
+name: Update Axiom Do11y
 
 # Periodically checks for new do11y releases and opens a PR when one is found.
 # Copy this file to .github/workflows/ in your docs repo.
