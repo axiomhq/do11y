@@ -68,10 +68,10 @@ The built bundles (`do11y.js`, `do11y.min.js`) are not committed to git. Obtain 
 ```bash
 npm install @axiomhq/do11y
 # Bundles: node_modules/@axiomhq/do11y/dist/do11y.js (and do11y.min.js)
-# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.js
+# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.ts
 ```
 
-1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.ts` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
 1. Add both scripts to every page, with the config file loading first:
 
 ```html
@@ -377,7 +377,7 @@ do11y/
 ├── src/
 │   └── do11y.ts          ← TypeScript source
 ├── examples/
-│   └── do11y-config.example.js  ← self-host config template (tracked in git)
+│   └── do11y-config.example.ts  ← self-host config template (tracked in git)
 ├── dist/                  ← built output (not committed to git)
 │   ├── do11y.js
 │   └── do11y.min.js
@@ -408,7 +408,7 @@ npm run check   # TypeScript type checking
 npm run lint    # oxlint
 ```
 
-All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control. The self-host config template lives in `examples/do11y-config.example.js` and is published with the package.
+All source changes go in `src/do11y.ts`. The `dist/` directory is produced by the build and is excluded from version control. The self-host config template lives in `examples/do11y-config.example.ts` and is published with the package.
 
 ## License
 
