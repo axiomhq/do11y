@@ -132,7 +132,7 @@ Set `framework` to auto-configure CSS selectors for your docs platform:
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
 | `'custom'` | Provide your own selectors (see below) |
 
-When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. You can also set the framework via a meta tag:
+When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. Optional: Set the framework via a meta tag:
 
 ```html
 <meta name="axiom-do11y-framework" content="docusaurus">
@@ -170,7 +170,7 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `feedback` | User clicks a "Was this helpful?" button. | `rating` |
 | `expand_collapse` | User toggles a `<details>` element or accordion. | `summary`, `action`, `section` |
 
-Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, `timezoneOffset`.
+Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, and `timezoneOffset`.
 
 ## Example queries
 
@@ -213,7 +213,7 @@ npx puppeteer browsers install chrome
 npm run test-live-sites
 ```
 
-Sites tested:
+The test covers the following sites:
 
 | Framework | URL |
 |---|---|
@@ -251,7 +251,7 @@ AXIOM_TOKEN=xaat-your-ingest-token
 AXIOM_DATASET=do11y
 ```
 
-The token needs both **ingest** and **query** permissions on the target dataset.
+The token requires both **ingest** and **query** permissions on the target dataset.
 
 Run the full suite:
 
@@ -271,7 +271,7 @@ Skip dependency installation on repeat runs:
 SKIP_INSTALL=1 npm run test-integrations
 ```
 
-**Frameworks tested:**
+The test covers the following frameworks:
 
 | Name | Type | Port | Notes |
 |---|---|---|---|
@@ -282,7 +282,7 @@ SKIP_INSTALL=1 npm run test-integrations
 | `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
 | `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python; skipped if unavailable |
 
-**Events validated per framework:**
+The test validates the following events per framework:
 
 | Event | Minimum expected | Notes |
 |---|---|---|
@@ -322,7 +322,7 @@ The `copyButtonSelector` does not match copy buttons on **GitBook** sites. GitBo
 
 ### Custom themes
 
-The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, you may need to set the selectors manually.
+The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, check whether you need to set the selectors manually.
 
 ### Framework selector drift
 
