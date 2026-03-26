@@ -91,9 +91,9 @@ All options can be set via `window.Do11yConfig` (inline script or a separate con
 
 | Option | Default | Description |
 |---|---|---|
-| `axiomHost` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
-| `axiomDataset` | `'DATASET_NAME'` | Target Axiom dataset. |
-| `axiomToken` | `'API_TOKEN'` | Ingest-only API token. |
+| `axiomHost` | `'AXIOM_DOMAIN'` | Base domain of the edge deployment where you want to store your data. For more information, see [Edge deployments](https://axiom.co/docs/reference/edge-deployments). |
+| `axiomDataset` | `'DATASET_NAME'` | Name of the Axiom dataset where you want to store your data. |
+| `axiomToken` | `'API_TOKEN'` | Ingest-only API token scoped to the dataset. |
 
 ### Behavior
 
@@ -191,12 +191,12 @@ Do11y exposes `window.AxiomDo11y` for debugging and integration:
 ```javascript
 AxiomDo11y.getConfig()    // Current config (token redacted)
 AxiomDo11y.isEnabled()    // Whether tracking is active
-AxiomDo11y.debug(true)    // Toggle console logging
 AxiomDo11y.flush()        // Force-send queued events
 AxiomDo11y.getQueueSize() // Number of queued events
-AxiomDo11y.cleanup()      // Disconnect observers and flush (for SPA unmount)
 AxiomDo11y.version        // Script version
 ```
+
+Do11y doesn't expose `cleanup()` and `debug()` on the global object. Exposing `cleanup()` would allow any third-party script on the page to silently stop tracking. Exposing `debug()` would allow any script to enable verbose console output that reveals the configured ingest endpoint and queued event data.
 
 ## Tests
 
