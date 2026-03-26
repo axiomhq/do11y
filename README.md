@@ -161,7 +161,7 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `referrerCategory`, `aiPlatform`, `isFirstPage`, `previousPath` |
 | `link_click` | Internal, external, anchor, or email link click. | `linkType`, `targetUrl`, `linkText`, `linkContext`, `linkSection`, `linkIndex` |
 | `scroll_depth` | User scrolls past a configured threshold. | `threshold`, `scrollPercent` |
-| `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth` |
+| `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth`, `referrerCategory`, `aiPlatform` |
 | `search_opened` | User opens the search dialog (click or Cmd/Ctrl+K). | `trigger` |
 | `code_copied` | User clicks a code block's copy button. | `language`, `codeSection`, `codeBlockIndex` |
 | `section_visible` | A heading was visible in the viewport long enough to be read. | `heading`, `headingLevel`, `visibleSeconds` |
