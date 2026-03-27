@@ -1,6 +1,21 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. Tracks how people use your documentation (page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions) and sends the data to [Axiom](https://axiom.co).
+Do11y is a documentation observability solution from [Axiom](https://axiom.co). It turns documentation usage into machine data. It streams behavioral events like the ones below from your docs site to Axiom in real time:
+
+- Page views
+- Scroll depth
+- Link clicks
+- Search queries
+- Code-block copies
+- Section reading time
+- Tab switches
+- Table of contents (TOC) usage
+- Feedback widget usage
+- Expand/collapse interactions
+
+Do11y is built for humans and machines alike. It emits observability data designed to be easy to use for human users, while also being easy to query and analyze for machines.
+
+Do11y is agent-native: in an era where AI assistants and autonomous agents increasingly read and cite documentation alongside human users, Do11y detects AI platform referrers (ChatGPT, Perplexity, Claude, Gemini, and others) so you can understand how agents and humans engage with your content differently.
 
 The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`). [rolldown](https://rolldown.rs) produces the built output.
 
@@ -334,16 +349,16 @@ If you self-host `do11y.js`, the included GitHub Action (`.github/workflows/sync
 
 ### Setup
 
-Add two variables in your docs repo under **Settings > Secrets and variables > Actions**:
-
-**Variables:**
+Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
 
 | Variable | Example | Description |
 |---|---|---|
 | `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
 | `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
 
-No secrets are required. The workflow uses the built-in `GITHUB_TOKEN`.
+You don't need to add any secrets.
+
+## Development
 
 ### Creating a release
 
@@ -358,8 +373,6 @@ gh release create v1.1.0
 Publishing a release triggers `publish.yml`, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
 
 The sync workflow only replaces `do11y.js` itself and leaves your `do11y-config.js` and meta tags untouched. See [Quickstart](#quickstart) for how to set up configuration separately.
-
-## Development
 
 ### Repository layout
 
