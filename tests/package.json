@@ -3,12 +3,17 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test-integrations": "node test-integrations.js",
-    "test-live-sites": "node test-live-sites.js",
-    "test-queries": "node test-queries.js"
+    "test-integrations": "tsx test-integrations.ts",
+    "test-live-sites": "tsx test-live-sites.ts",
+    "test-queries": "tsx test-queries.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "puppeteer": "^24.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
   }
 }

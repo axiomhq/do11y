@@ -2,14 +2,15 @@
  * Do11y integration test runner.
  *
  * Loads AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET from .env in this directory.
- * Run: npm test (or node run.js from this directory)
+ * Run: npm test (or npx tsx test-integrations.ts from this directory)
  *
  * For each supported framework, this script:
- *   1. Scaffolds a minimal documentation site with do11y.js injected
- *   2. Starts the framework's dev server
- *   3. Drives Puppeteer through a set of user interactions
- *   4. Waits for events to flush to Axiom
- *   5. Queries the Axiom API to validate that the expected events arrived
+ *   1. Builds dist/do11y.js from source if it is not already present
+ *   2. Scaffolds a minimal documentation site with do11y.js injected
+ *   3. Starts the framework's dev server
+ *   4. Drives Puppeteer through a set of user interactions
+ *   5. Waits for events to flush to Axiom
+ *   6. Queries the Axiom API to validate that the expected events arrived
  *
  * Required (set in .env in this directory):
  *   AXIOM_DOMAIN      — Axiom domain (e.g. axiom.co or dev.axiomtestlabs.co)
@@ -19,27 +20,70 @@
  * Optional (can override in .env or shell):
  *   FRAMEWORKS      — Comma-separated list of frameworks to test (default: all)
  *   SKIP_INSTALL    — "1" skips install entirely; "0" forces install even if node_modules exists; unset installs only when node_modules is absent
+ *   SKIP_BUILD      — "1" skips the dist/do11y.js build step (use when you have already built)
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '.env') });
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
+import { execSync, spawn, ChildProcess } from 'child_process';
+import fs from 'fs';
+import http from 'http';
+import type { Browser, Page } from 'puppeteer';
 
-const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN;
-const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
-const AXIOM_DATASET = process.env.AXIOM_DATASET;
+const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN!;
+const AXIOM_TOKEN = process.env.AXIOM_TOKEN!;
+const AXIOM_DATASET = process.env.AXIOM_DATASET!;
 const SKIP_INSTALL = process.env.SKIP_INSTALL === '1';
 const FORCE_INSTALL = process.env.SKIP_INSTALL === '0';
+const SKIP_BUILD = process.env.SKIP_BUILD === '1';
 
 const DO11Y_SRC = path.resolve(__dirname, '../dist/do11y.js');
 const SITES_DIR = path.join(__dirname, 'sites');
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface Framework {
+  port: number;
+  type: 'npm' | 'pip' | 'static';
+  dir: string;
+  staticDir?: string;
+  do11yDest: string;
+  startCmd?: string;
+  startArgs?: string[];
+  readyPattern?: RegExp;
+  buildCmd?: string;
+  injectDo11y?: boolean;
+  startPage: string;
+  guidePage: string;
+}
+
+interface DevHandle {
+  proc: ChildProcess;
+  getOutput: () => string;
+}
+
+interface TestResult {
+  skipped?: boolean;
+  reason?: string;
+  tested?: boolean;
+  interactionError?: string;
+}
+
+interface AxiomEvent {
+  eventType?: string;
+  testFramework?: string;
+  [key: string]: unknown;
+}
+
+interface EventExpectation {
+  min: number;
+}
+
 // ─── Framework definitions ──────────────────────────────────────────────────
 
-const FRAMEWORKS = {
+const FRAMEWORKS: Record<string, Framework> = {
   mintlify: {
     port: 4005,
     type: 'npm',
@@ -110,28 +154,54 @@ const FRAMEWORKS = {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function log(msg) { console.log(`\x1b[36m[runner]\x1b[0m ${msg}`); }
-function warn(msg) { console.log(`\x1b[33m[runner]\x1b[0m ${msg}`); }
-function fail(msg) { console.log(`\x1b[31m[runner]\x1b[0m ${msg}`); }
+function log(msg: string): void { console.log(`\x1b[36m[runner]\x1b[0m ${msg}`); }
+function warn(msg: string): void { console.log(`\x1b[33m[runner]\x1b[0m ${msg}`); }
+function fail(msg: string): void { console.log(`\x1b[31m[runner]\x1b[0m ${msg}`); }
 
-function patchDo11y(destPath, framework, testRunId) {
-  let src = fs.readFileSync(DO11Y_SRC, 'utf8');
-  src = src.replace("'AXIOM_DOMAIN'", `'${AXIOM_DOMAIN}'`);
-  src = src.replace("'DATASET_NAME'", `'${AXIOM_DATASET}'`);
-  src = src.replace("'API_TOKEN'", `'${AXIOM_TOKEN}'`);
-  // allowedDomains defaults to null, no replacement needed
-  src = src.replace('debug: false', 'debug: true');
-  // Inject testRunId and framework into every event
-  src = src.replace(
-    'eventType: eventType,',
-    `eventType: eventType,\n      testRunId: '${testRunId}',\n      testFramework: '${framework}',`
-  );
+function patchDo11y(destPath: string, framework: string, testRunId: string): void {
+  const src = fs.readFileSync(DO11Y_SRC, 'utf8');
+
+  // Prepend a window.Do11yConfig block so credentials never need to be
+  // string-replaced inside the built artifact (resilient to minification).
+  const configBlock = `window.Do11yConfig = {
+  axiomHost: '${AXIOM_DOMAIN.trim()}',
+  axiomDataset: '${AXIOM_DATASET.trim()}',
+  axiomToken: '${AXIOM_TOKEN.trim()}',
+  debug: true,
+  allowedDomains: null,
+  // Lower section-visibility threshold so headings visible for ≥1s are recorded.
+  // The test sleeps 2s after page load, which comfortably exceeds this.
+  sectionVisibleThreshold: 1,
+};\n`;
+
+  // Intercept fetch to inject testRunId and testFramework into every ingest
+  // request. This avoids patching compiled source and works regardless of how
+  // rolldown names or formats the event-object literal.
+  const interceptBlock = `(function () {
+  var _fetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    if (typeof url === 'string' && url.includes('/v1/ingest/') && opts && opts.body) {
+      try {
+        var events = JSON.parse(opts.body);
+        events = events.map(function (e) {
+          return Object.assign({}, e, {
+            testRunId: '${testRunId}',
+            testFramework: '${framework}',
+          });
+        });
+        opts = Object.assign({}, opts, { body: JSON.stringify(events) });
+      } catch (_e) { /* ignore */ }
+    }
+    return _fetch(url, opts);
+  };
+}());\n`;
+
   const dir = path.dirname(destPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(destPath, src);
+  fs.writeFileSync(destPath, configBlock + interceptBlock + src);
 }
 
-function injectDo11yTags(dir) {
+function injectDo11yTags(dir: string): void {
   const entries = fs.readdirSync(dir, { recursive: true });
   for (const entry of entries) {
     const rel = String(entry);
@@ -150,16 +220,16 @@ function injectDo11yTags(dir) {
   }
 }
 
-function waitForServer(port, timeoutMs = 180000) {
+function waitForServer(port: number, timeoutMs = 180000): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
-    function check() {
+    function check(): void {
       if (Date.now() - start > timeoutMs) {
         return reject(new Error(`Server on port ${port} did not start within ${timeoutMs}ms`));
       }
       const req = http.get(`http://localhost:${port}/`, (res) => {
         res.resume();
-        if (res.statusCode < 500) resolve();
+        if (res.statusCode! < 500) resolve();
         else setTimeout(check, 500);
       });
       req.on('error', () => setTimeout(check, 500));
@@ -169,16 +239,20 @@ function waitForServer(port, timeoutMs = 180000) {
   });
 }
 
-function startStaticServer(dir, port) {
+function startStaticServer(dir: string, port: number): Promise<http.Server> {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
-      let filePath = path.join(dir, req.url === '/' ? 'index.html' : req.url);
+      let filePath = path.join(dir, req.url === '/' ? 'index.html' : req.url!);
       if (!path.extname(filePath)) filePath += '.html';
       fs.readFile(filePath, (err, data) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         const ext = path.extname(filePath);
-        const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
-        res.writeHead(200, { 'Content-Type': types[ext] || 'application/octet-stream' });
+        const types: Record<string, string> = {
+          '.html': 'text/html',
+          '.js': 'application/javascript',
+          '.css': 'text/css',
+        };
+        res.writeHead(200, { 'Content-Type': types[ext] ?? 'application/octet-stream' });
         res.end(data);
       });
     });
@@ -186,7 +260,7 @@ function startStaticServer(dir, port) {
   });
 }
 
-function installDeps(fw) {
+function installDeps(fw: Framework): void {
   if (fw.type === 'npm') {
     if (!SKIP_INSTALL && (FORCE_INSTALL || !fs.existsSync(path.join(fw.dir, 'node_modules')))) {
       log(`  Installing npm dependencies…`);
@@ -195,7 +269,7 @@ function installDeps(fw) {
   } else if (fw.type === 'pip') {
     // Always check for the binary; pip packages aren't in node_modules
     const extraPath = getPythonUserBins().join(':');
-    const checkEnv = { ...process.env, PATH: extraPath + ':' + (process.env.PATH || '') };
+    const checkEnv = { ...process.env, PATH: extraPath + ':' + (process.env.PATH ?? '') };
     try {
       execSync('mkdocs --version', { stdio: 'pipe', env: checkEnv });
     } catch {
@@ -209,10 +283,10 @@ function installDeps(fw) {
   }
 }
 
-function getPythonUserBins() {
+function getPythonUserBins(): string[] {
   // pip and python3 may resolve to different Python versions (e.g. Xcode 3.9
   // vs Homebrew 3.12), so collect all known user-site bin directories.
-  const dirs = new Set();
+  const dirs = new Set<string>();
   for (const cmd of ['python3 -m site --user-base', 'python -m site --user-base']) {
     try {
       const base = execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
@@ -220,7 +294,7 @@ function getPythonUserBins() {
     } catch { /* ignore */ }
   }
   // Also scan ~/Library/Python/*/bin on macOS
-  const pyLibDir = path.join(process.env.HOME || '', 'Library', 'Python');
+  const pyLibDir = path.join(process.env.HOME ?? '', 'Library', 'Python');
   try {
     for (const ver of fs.readdirSync(pyLibDir)) {
       dirs.add(path.join(pyLibDir, ver, 'bin'));
@@ -229,65 +303,106 @@ function getPythonUserBins() {
   return [...dirs];
 }
 
-function startDevServer(fw) {
+function startDevServer(fw: Framework): DevHandle {
   const env = { ...process.env, BROWSER: 'none', NODE_ENV: 'development' };
   if (fw.type === 'pip') {
     const extraPath = getPythonUserBins().join(':');
-    if (extraPath) env.PATH = extraPath + ':' + (env.PATH || '');
+    if (extraPath) env.PATH = extraPath + ':' + (env.PATH ?? '');
   }
-  const proc = spawn(fw.startCmd, fw.startArgs, {
+  const proc = spawn(fw.startCmd!, fw.startArgs!, {
     cwd: fw.dir,
     stdio: ['ignore', 'pipe', 'pipe'],
     env,
   });
   let output = '';
-  proc.stdout.on('data', (d) => { output += d.toString(); });
-  proc.stderr.on('data', (d) => { output += d.toString(); });
-  proc.on('error', (err) => { fail(`  Server process error: ${err.message}`); });
+  proc.stdout!.on('data', (d: Buffer) => { output += d.toString(); });
+  proc.stderr!.on('data', (d: Buffer) => { output += d.toString(); });
+  proc.on('error', (err: Error) => { fail(`  Server process error: ${err.message}`); });
   return { proc, getOutput: () => output };
 }
 
-function killProc(proc) {
-  try { process.kill(-proc.pid, 'SIGTERM'); } catch { /* ignore */ }
+function killProc(proc: ChildProcess): void {
+  try { process.kill(-proc.pid!, 'SIGTERM'); } catch { /* ignore */ }
   try { proc.kill('SIGTERM'); } catch { /* ignore */ }
 }
 
 // ─── Puppeteer interaction scenarios ────────────────────────────────────────
 
-async function runInteractions(browser, baseUrl, fw) {
+async function runInteractions(browser: Browser, baseUrl: string, fw: Framework): Promise<void> {
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
+  // 1440px wide ensures VitePress (≥1280px) and other frameworks render the
+  // aside TOC panel; also benefits any framework with a responsive layout.
+  await page.setViewport({ width: 1440, height: 900 });
 
   // 1. Page view on start page
   log('  → page_view (start page)');
   await page.goto(`${baseUrl}${fw.startPage}`, { waitUntil: 'networkidle2', timeout: 30000 });
-  await sleep(1500);
+  // Sleep 2s so headings in the initial viewport accumulate ≥1s of visibility
+  // (matches the sectionVisibleThreshold: 1 set in the test Do11yConfig).
+  await sleep(2000);
 
-  // 2. Scroll to bottom (triggers scroll_depth at 25, 50, 75, 90%)
+  // 2. Click a TOC link *before* scrolling so the page is at the top, the TOC
+  //    panel is freshly rendered, and the anchor links are reachable.
+  log('  → toc_click');
+  // Find the TOC link via evaluate, mark it, then click via Puppeteer's native
+  // page.click() — the same approach that fixed search_opened. Synthetic
+  // el.click() from evaluate is less reliable for triggering do11y's
+  // capture-phase document listener.
+  const TOC_SELECTORS = [
+    '#table-of-contents',            // Mintlify (id-based, not class-based)
+    '[data-testid="table-of-contents"]',
+    '.table-of-contents',            // Docusaurus
+    '.VPDocAsideOutline',            // VitePress
+    '.md-sidebar--secondary .md-nav', // MkDocs Material
+    '[class*="toc"]',
+    '[class*="outline"]',
+    '[class*="TableOfContents"]',
+    'aside.toc',
+  ];
+  try {
+    const found = await page.evaluate((sels: string[]) => {
+      for (const sel of sels) {
+        const toc = document.querySelector(sel);
+        if (!toc) continue;
+        const link = toc.querySelector('a[href^="#"]');
+        if (!link) continue;
+        link.setAttribute('data-do11y-test-toc', '1');
+        return true;
+      }
+      return false;
+    }, TOC_SELECTORS);
+    if (found) {
+      await page.click('[data-do11y-test-toc]');
+    } else {
+      warn('  ⚠ No TOC element found, skipping');
+    }
+  } catch { /* ignore */ }
+  await sleep(500);
+
+  // 3. Scroll to bottom (triggers scroll_depth; also sends headings through
+  //    the IntersectionObserver exit callback → section_visible events)
   log('  → scroll_depth');
   await autoScroll(page);
   await sleep(1000);
 
-  // 3. Click search (triggers search_opened)
+  // 4. Click search (triggers search_opened).
+  //    Uses Puppeteer's native page.click() which dispatches real pointer events,
+  //    more reliably triggering do11y's capture-phase listener than el.click().
   log('  → search_opened');
+  const SEARCH_SEL =
+    '#search-bar-entry, .DocSearch-Button, .nextra-search input, ' +
+    '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
+    'button[aria-label*="search" i]';
   try {
-    const searchClicked = await page.evaluate(() => {
-      const el = document.querySelector(
-        '#search-bar-entry, .DocSearch, .DocSearch-Button, .nextra-search input, ' +
-        '[data-testid*="search"], .md-search__input, .VPNavBarSearchButton, ' +
-        'input[placeholder*="search" i], button[aria-label*="search" i]'
-      );
-      if (el) { el.click(); return true; }
-      return false;
-    });
-    if (!searchClicked) warn('  ⚠ No search element found, skipping');
-  } catch { /* ignore */ }
+    await page.waitForSelector(SEARCH_SEL, { timeout: 3000 });
+    await page.click(SEARCH_SEL);
+  } catch { warn('  ⚠ No search element found, skipping'); }
   await sleep(500);
   // Close any open dialog/overlay
   await page.keyboard.press('Escape');
   await sleep(300);
 
-  // 4. Click copy button (triggers code_copied)
+  // 5. Click copy button (triggers code_copied)
   log('  → code_copied');
   try {
     const copyClicked = await page.evaluate(() => {
@@ -297,14 +412,14 @@ async function runInteractions(browser, baseUrl, fw) {
         '.md-clipboard, .md-code__button[title="Copy to clipboard"], ' +
         '.vp-code-copy, button.copy[title*="Copy"]'
       );
-      if (el) { el.click(); return true; }
+      if (el) { (el as HTMLElement).click(); return true; }
       return false;
     });
     if (!copyClicked) warn('  ⚠ No copy button found, skipping');
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 5. Expand a <details> element (triggers expand_collapse)
+  // 6. Expand a <details> element (triggers expand_collapse)
   log('  → expand_collapse');
   try {
     const expanded = await page.evaluate(() => {
@@ -319,26 +434,7 @@ async function runInteractions(browser, baseUrl, fw) {
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 6. Click a TOC link (triggers toc_click)
-  log('  → toc_click');
-  try {
-    const tocClicked = await page.evaluate(() => {
-      const toc = document.querySelector(
-        '.table-of-contents, [class*="toc"], [class*="outline"], ' +
-        '[class*="TableOfContents"], .VPDocAsideOutline, ' +
-        '.md-sidebar--secondary .md-nav, aside.toc'
-      );
-      if (toc) {
-        const link = toc.querySelector('a[href^="#"]');
-        if (link) { link.click(); return true; }
-      }
-      return false;
-    });
-    if (!tocClicked) warn('  ⚠ No TOC element found, skipping');
-  } catch { /* ignore */ }
-  await sleep(500);
-
-  // 7. Click feedback button (triggers feedback — only gitbook has this)
+  // 7. Click feedback button (triggers feedback)
   log('  → feedback');
   try {
     const feedbackClicked = await page.evaluate(() => {
@@ -347,7 +443,7 @@ async function runInteractions(browser, baseUrl, fw) {
       );
       if (container) {
         const btn = container.querySelector('button[data-value], button');
-        if (btn) { btn.click(); return true; }
+        if (btn) { (btn as HTMLElement).click(); return true; }
       }
       return false;
     });
@@ -368,7 +464,7 @@ async function runInteractions(browser, baseUrl, fw) {
     await page.waitForSelector(linkSel, { timeout: 5000 });
     // Scroll the link into view first (needed for VitePress/Docusaurus where
     // the link may be below the fold)
-    await page.evaluate((sel) => {
+    await page.evaluate((sel: string) => {
       const el = document.querySelector(sel);
       if (el) el.scrollIntoView({ block: 'center' });
     }, linkSel);
@@ -390,18 +486,18 @@ async function runInteractions(browser, baseUrl, fw) {
   await page.close();
 }
 
-async function autoScroll(page) {
+async function autoScroll(page: Page): Promise<void> {
   await page.evaluate(() => {
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       const distance = 200;
       const delay = 80;
 
       // Some frameworks (GitBook/HonKit) use container-based scrolling.
       // Find the scrollable container so we scroll it instead of the window.
-      let container = null;
+      let container: Element | null = null;
       const contentEl = document.querySelector('[role="main"], main, article');
       if (contentEl) {
-        let el = contentEl;
+        let el: Element | null = contentEl;
         while (el && el !== document.body && el !== document.documentElement) {
           const style = window.getComputedStyle(el);
           if ((style.overflowY === 'auto' || style.overflowY === 'scroll') &&
@@ -413,16 +509,19 @@ async function autoScroll(page) {
         }
       }
 
-      const getPos = () => container ? container.scrollTop : window.scrollY;
-      const getMax = () => container
-        ? container.scrollHeight - container.clientHeight
-        : document.body.scrollHeight - window.innerHeight;
-
+      // Inline scroll-position helpers — named arrow function assignments
+      // trigger esbuild's __name helper which is not available in the
+      // browser context when Puppeteer serialises this callback as a string.
       const timer = setInterval(() => {
-        if (container) { container.scrollTop += distance; }
+        if (container) { (container as HTMLElement).scrollTop += distance; }
         else { window.scrollBy(0, distance); }
 
-        if (getPos() >= getMax() - 1) {
+        const scrollPos = container ? container.scrollTop : window.scrollY;
+        const maxScroll = container
+          ? container.scrollHeight - container.clientHeight
+          : document.body.scrollHeight - window.innerHeight;
+
+        if (scrollPos >= maxScroll - 1) {
           clearInterval(timer);
           resolve();
         }
@@ -432,11 +531,30 @@ async function autoScroll(page) {
   });
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Build ───────────────────────────────────────────────────────────────────
+
+function ensureBuild(): void {
+  if (SKIP_BUILD) {
+    log('SKIP_BUILD=1 — skipping build step');
+    if (!fs.existsSync(DO11Y_SRC)) {
+      fail(`dist/do11y.js not found and SKIP_BUILD=1. Run \`npm run build\` in the repo root first.`);
+      process.exit(1);
+    }
+    return;
+  }
+  log('Building dist/do11y.js from source…');
+  execSync('npm run build', {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'inherit',
+  });
+  log('Build complete\n');
+}
 
 // ─── Axiom query ────────────────────────────────────────────────────────────
 
-async function queryAxiom(testRunId, startTime) {
+async function queryAxiom(testRunId: string, startTime: Date): Promise<AxiomEvent[]> {
   const apl = `['${AXIOM_DATASET}'] | where testRunId == '${testRunId}' | order by _time asc`;
   const body = JSON.stringify({
     apl,
@@ -460,18 +578,24 @@ async function queryAxiom(testRunId, startTime) {
   }
 
   const text = await res.text();
-  let data;
+  let data: {
+    tables?: Array<{
+      fields?: Array<{ name: string }>;
+      columns?: unknown[][];
+    }>;
+    matches?: Array<{ _source?: AxiomEvent; data?: AxiomEvent }>;
+  };
   try { data = JSON.parse(text); } catch { throw new Error(`Axiom returned non-JSON: ${text.slice(0, 500)}`); }
 
   // Axiom tabular format: fields[] has column names, columns[] is column-oriented data
   const table = data.tables?.[0];
   if (table?.fields && table?.columns) {
     const fieldNames = table.fields.map(f => f.name);
-    const numRows = table.columns[0]?.length || 0;
-    const rows = [];
+    const numRows = table.columns[0]?.length ?? 0;
+    const rows: AxiomEvent[] = [];
     for (let j = 0; j < numRows; j++) {
-      const obj = {};
-      fieldNames.forEach((name, i) => { obj[name] = table.columns[i]?.[j]; });
+      const obj: AxiomEvent = {};
+      fieldNames.forEach((name, i) => { obj[name] = table.columns![i]?.[j]; });
       rows.push(obj);
     }
     return rows;
@@ -479,7 +603,7 @@ async function queryAxiom(testRunId, startTime) {
 
   // Legacy format: data.matches[]
   if (Array.isArray(data.matches)) {
-    return data.matches.map(m => m._source || m.data || m);
+    return data.matches.map(m => m._source ?? m.data ?? m as AxiomEvent);
   }
 
   return [];
@@ -487,38 +611,44 @@ async function queryAxiom(testRunId, startTime) {
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
-const EXPECTED_EVENTS = {
+const EXPECTED_EVENTS: Record<string, EventExpectation> = {
   page_view: { min: 2 },
   scroll_depth: { min: 1 },
-  search_opened: { min: 0 },        // best-effort
-  code_copied: { min: 0 },          // best-effort
+  search_opened: { min: 0 },        // best-effort — no search in GitBook static
+  code_copied: { min: 0 },          // best-effort — no identifiable copy button in GitBook
   link_click: { min: 1 },
   page_exit: { min: 1 },
   expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
-  toc_click: { min: 0 },            // best-effort — requires TOC in DOM
-  feedback: { min: 0 },             // best-effort — only gitbook has widget
-  section_visible: { min: 0 },      // best-effort — requires 3s+ dwell on heading
+  toc_click: { min: 0 },            // best-effort — GitBook static has no on-page TOC;
+                                    // VitePress has one but synthetic clicks can't reliably
+                                    // fire do11y's listener due to Vue's reactive re-rendering
+  feedback: { min: 0 },             // best-effort — only GitBook has a native feedback widget
+  section_visible: { min: 1 },      // sectionVisibleThreshold: 1 + 2s sleep guarantees this
 };
 
-function validateEvents(framework, events) {
-  const byType = {};
+function validateEvents(
+  framework: string,
+  events: AxiomEvent[]
+): { pass: number; fail: number; lines: string[]; total: number } {
+  const byType: Record<string, number> = {};
   for (const e of events) {
-    byType[e.eventType] = (byType[e.eventType] || 0) + 1;
+    if (e.eventType) byType[e.eventType] = (byType[e.eventType] ?? 0) + 1;
   }
 
   let pass = 0;
-  let fail = 0;
-  const lines = [];
+  let failCount = 0;
+  const lines: string[] = [];
 
+  void framework;
   for (const [type, { min }] of Object.entries(EXPECTED_EVENTS)) {
-    const count = byType[type] || 0;
+    const count = byType[type] ?? 0;
     const ok = count >= min;
-    if (ok) pass++; else fail++;
+    if (ok) pass++; else failCount++;
     const icon = ok ? '✅' : (min === 0 ? '⚠️' : '❌');
     lines.push(`    ${icon} ${type.padEnd(18)} ${count} event(s) (expected ≥${min})`);
   }
 
-  return { pass, fail, lines, total: events.length };
+  return { pass, fail: failCount, lines, total: events.length };
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────
@@ -529,6 +659,9 @@ function validateEvents(framework, events) {
     fail('Missing required env vars: AXIOM_DOMAIN, AXIOM_TOKEN, AXIOM_DATASET');
     process.exit(1);
   }
+
+  // Build dist/do11y.js from TypeScript source before anything else
+  ensureBuild();
 
   const testRunId = `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const startTime = new Date();
@@ -544,25 +677,16 @@ function validateEvents(framework, events) {
 
   log(`Frameworks: ${frameworkNames.join(', ')}\n`);
 
-  // Import puppeteer (installed in integration package)
-  let puppeteer;
-  try {
-    puppeteer = require('puppeteer');
-  } catch {
-    // Fall back to the sibling test directory's puppeteer
-    puppeteer = require(path.join(__dirname, '../node_modules/puppeteer'));
-  }
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
-  });
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const puppeteer = require('puppeteer') as { launch: (opts: { headless: boolean }) => Promise<Browser> };
+  const browser = await puppeteer.launch({ headless: true });
 
-  const servers = [];       // track servers to shut down later
-  const processes = [];     // track child processes to kill later
-  const results = {};
+  const servers: http.Server[] = [];
+  const processes: ChildProcess[] = [];
+  const results: Record<string, TestResult> = {};
 
   for (const name of frameworkNames) {
-    const fw = FRAMEWORKS[name];
+    const fw = FRAMEWORKS[name]!;
     console.log(`\n${'─'.repeat(60)}`);
     log(`${name} (port ${fw.port})`);
     console.log(`${'─'.repeat(60)}`);
@@ -570,7 +694,7 @@ function validateEvents(framework, events) {
     // 0. Kill anything already on this port
     try { execSync(`lsof -ti :${fw.port} | xargs kill -9`, { stdio: 'pipe' }); } catch { /* ok */ }
     // Clean stale build caches that cause 500 errors on cold start
-    const fwDir = fw.dir || fw.staticDir;
+    const fwDir = fw.dir ?? fw.staticDir;
     if (fwDir) {
       for (const cache of ['.next', '.vitepress/cache', '.vitepress/dist', '_book']) {
         const cacheDir = path.join(fwDir, cache);
@@ -588,8 +712,8 @@ function validateEvents(framework, events) {
         log('  Building…');
         execSync(fw.buildCmd, { cwd: fw.dir, stdio: 'pipe' });
       } catch (err) {
-        warn(`  Skipping ${name}: build failed (${err.message})`);
-        results[name] = { skipped: true, reason: err.message };
+        warn(`  Skipping ${name}: build failed (${(err as Error).message})`);
+        results[name] = { skipped: true, reason: (err as Error).message };
         continue;
       }
     }
@@ -605,18 +729,18 @@ function validateEvents(framework, events) {
     }
 
     // 2. Start server
-    let server;
-    let devHandle;
+    let server: http.Server | undefined;
+    let devHandle: DevHandle | undefined;
     if (fw.type === 'static') {
-      server = await startStaticServer(fw.staticDir, fw.port);
+      server = await startStaticServer(fw.staticDir!, fw.port);
       servers.push(server);
       log('  Static server started');
     } else {
       try {
         installDeps(fw);
       } catch (err) {
-        warn(`  Skipping ${name}: dependency install failed (${err.message})`);
-        results[name] = { skipped: true, reason: err.message };
+        warn(`  Skipping ${name}: dependency install failed (${(err as Error).message})`);
+        results[name] = { skipped: true, reason: (err as Error).message };
         continue;
       }
       log('  Starting dev server…');
@@ -633,8 +757,8 @@ function validateEvents(framework, events) {
         const out = devHandle.getOutput();
         if (out) fail(`  Server output:\n${out.slice(-500)}`);
       }
-      warn(`  Skipping ${name}: ${err.message}`);
-      results[name] = { skipped: true, reason: err.message };
+      warn(`  Skipping ${name}: ${(err as Error).message}`);
+      results[name] = { skipped: true, reason: (err as Error).message };
       continue;
     }
 
@@ -644,8 +768,8 @@ function validateEvents(framework, events) {
       log('  Interactions complete');
       results[name] = { tested: true };
     } catch (err) {
-      warn(`  Interaction error: ${err.message}`);
-      results[name] = { tested: true, interactionError: err.message };
+      warn(`  Interaction error: ${(err as Error).message}`);
+      results[name] = { tested: true, interactionError: (err as Error).message };
     }
   }
 
@@ -664,12 +788,12 @@ function validateEvents(framework, events) {
   log('QUERYING AXIOM');
   console.log(`${'='.repeat(60)}`);
 
-  let allEvents;
+  let allEvents: AxiomEvent[];
   try {
     allEvents = await queryAxiom(testRunId, startTime);
     log(`Total events received: ${allEvents.length}\n`);
   } catch (err) {
-    fail(`Axiom query failed: ${err.message}`);
+    fail(`Axiom query failed: ${(err as Error).message}`);
     process.exit(1);
   }
 
@@ -707,7 +831,7 @@ function validateEvents(framework, events) {
 
   // Clean up patched do11y copies
   for (const name of frameworkNames) {
-    const fw = FRAMEWORKS[name];
+    const fw = FRAMEWORKS[name]!;
     try { fs.unlinkSync(fw.do11yDest); } catch { /* ignore */ }
   }
 

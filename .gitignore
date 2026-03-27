@@ -13,6 +13,7 @@ Thumbs.db
 .env.production.local
 
 # Build output
+dist/
 build/
 .next/
 .docusaurus/
