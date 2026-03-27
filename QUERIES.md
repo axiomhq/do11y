@@ -104,11 +104,6 @@ Compare engagement depth for AI-referred visitors vs other sources.
 ```apl
 ['do11y']
 | where eventType == 'page_exit'
-| join kind=inner (
-    ['do11y']
-    | where eventType == 'page_view' and isFirstPage == true
-    | project sessionId, referrerCategory
-  ) on sessionId
 | summarize
     visits = count(),
     avgTime = avg(activeTimeSeconds),
