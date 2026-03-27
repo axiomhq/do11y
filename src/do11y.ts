@@ -281,6 +281,7 @@ function applyFrameworkSelectors(): void {
 
   // Fallback for any selector still unset (covers 'custom' with partial overrides)
   const fallback = FRAMEWORK_PRESETS.mintlify;
+  if (!fallback) return;
   SELECTOR_KEYS.forEach((key) => {
     if (!config[key]) config[key] = fallback[key];
   });
@@ -330,7 +331,7 @@ function validateSelector(selector: string | null | undefined): string | null {
   try {
     document.querySelector(selector);
     return selector;
-  } catch (_e) {
+  } catch {
     if (config.debug) {
       console.warn('[Axiom Do11y] Invalid CSS selector rejected:', selector);
     }
@@ -390,8 +391,8 @@ function generateSessionId(): string {
   if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
     const arr = new Uint8Array(16);
     window.crypto.getRandomValues(arr);
-    arr[6] = (arr[6] & 0x0f) | 0x40;
-    arr[8] = (arr[8] & 0x3f) | 0x80;
+    arr[6] = (arr[6]! & 0x0f) | 0x40;
+    arr[8] = (arr[8]! & 0x3f) | 0x80;
     const hex = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
     return (
       hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' +
@@ -425,7 +426,7 @@ function getSession(): SessionData {
         session = parsed;
       }
     }
-  } catch (_e) {
+  } catch {
     // sessionStorage not available or parsing error
   }
 
@@ -447,7 +448,7 @@ function getSession(): SessionData {
 function saveSession(session: SessionData): void {
   try {
     sessionStorage.setItem('axiom_docs_session', JSON.stringify(session));
-  } catch (_e) {
+  } catch {
     // sessionStorage not available
   }
 }
@@ -589,7 +590,7 @@ function getReferrerDomain(): string {
     const url = new URL(document.referrer);
     if (url.hostname === window.location.hostname) return 'internal';
     return url.hostname;
-  } catch (_e) {
+  } catch {
     return 'unknown';
   }
 }
@@ -804,7 +805,7 @@ function flushSync(): void {
       body: JSON.stringify(events),
       keepalive: true,
     });
-  } catch (_e) {
+  } catch {
     // Best effort - ignore errors on page unload
   }
 
@@ -835,7 +836,7 @@ function trackPageView(): void {
     aiPlatform: referrerInfo.aiPlatform,
     isFirstPage: session.pageCount === 1,
     previousPath: session.pageSequence.length > 1
-      ? session.pageSequence[session.pageSequence.length - 2].path
+      ? session.pageSequence[session.pageSequence.length - 2]!.path
       : null,
   });
 }
@@ -873,7 +874,7 @@ function setupLinkTracking(): void {
       } else if (href.startsWith('mailto:')) {
         linkType = 'email';
       }
-    } catch (_e) {
+    } catch {
       // Invalid URL
     }
 
@@ -914,7 +915,7 @@ function getNearestHeading(element: Element): string | null {
       }
       const headings = sibling.querySelectorAll('h1, h2, h3, h4, h5, h6');
       if (headings.length > 0) {
-        return headings[headings.length - 1].textContent?.trim().substring(0, 100) ?? null;
+        return headings[headings.length - 1]!.textContent?.trim().substring(0, 100) ?? null;
       }
       sibling = sibling.previousElementSibling;
     }
@@ -931,7 +932,7 @@ function getLinkIndex(link: Element, href: string): number {
     for (let i = 0; i < allLinks.length; i++) {
       if (allLinks[i] === link) return i + 1;
     }
-  } catch (_e) {
+  } catch {
     // Selector failed (malformed href), fall back to 1
   }
   return 1;
@@ -1098,7 +1099,7 @@ function setupEngagementTracking(): void {
 
   window.addEventListener('beforeunload', () => {
     emitPageExit();
-    flushSync();
+    cleanup();
   });
 }
 
@@ -1132,7 +1133,7 @@ function getCodeBlockIndex(codeBlock: Element | null): number {
     for (let i = 0; i < allBlocks.length; i++) {
       if (allBlocks[i] === codeBlock) return i + 1;
     }
-  } catch (_e) {
+  } catch {
     // Selector failed
   }
   return 1;
@@ -1324,7 +1325,7 @@ function setupTocClickTracking(): void {
       if (targetEl && /^H[1-6]$/.test(targetEl.tagName)) {
         headingLevel = parseInt(targetEl.tagName.charAt(1), 10);
       }
-    } catch (_e) { /* ignore */ }
+    } catch { /* ignore */ }
 
     const tocLinks = tocContainer.querySelectorAll('a[href^="#"]');
     let tocPosition = 1;
@@ -1435,7 +1436,7 @@ function init(): void {
         Object.prototype.hasOwnProperty.call(window.Do11yConfig, key) &&
         Object.prototype.hasOwnProperty.call(config, key)
       ) {
-        (config as Record<string, unknown>)[key] = (window.Do11yConfig as Record<string, unknown>)[key];
+        (config as unknown as Record<string, unknown>)[key] = (window.Do11yConfig as unknown as Record<string, unknown>)[key];
       }
     }
   }
