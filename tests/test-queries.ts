@@ -1,32 +1,63 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * Test runner for QUERIES.md examples.
- * 
+ *
  * Validates that all APL queries in QUERIES.md are syntactically correct
  * and return data with expected structure and values.
- * 
+ *
  * Uses credentials from .env in this directory.
- * 
- * Run: node test-queries.js
+ *
+ * Run: npx tsx test-queries.ts
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
-const fs = require('fs');
-const path = require('path');
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '.env') });
 
-const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN;
-const AXIOM_TOKEN = process.env.AXIOM_TOKEN;
-const AXIOM_DATASET = process.env.AXIOM_DATASET || 'do11y';
+import fs from 'fs';
+
+const AXIOM_DOMAIN = process.env.AXIOM_DOMAIN!;
+const AXIOM_TOKEN = process.env.AXIOM_TOKEN!;
+const AXIOM_DATASET = process.env.AXIOM_DATASET ?? 'do11y';
 
 if (!AXIOM_DOMAIN || !AXIOM_TOKEN) {
   console.error('Missing AXIOM_DOMAIN or AXIOM_TOKEN in .env');
   process.exit(1);
 }
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Row = Record<string, unknown>;
+
+interface QueryExpectation {
+  columns: string[];
+  validate: (rows: Row[]) => string | null;
+}
+
+interface Query {
+  section: string;
+  subsection: string;
+  query: string;
+  index: number;
+}
+
+interface QueryResult {
+  rows: Row[];
+  columns: string[];
+}
+
+interface Failure {
+  name: string;
+  query: string;
+  error: string;
+  rowCount?: number;
+  columns?: string[];
+}
+
 // ─── Query expectations ─────────────────────────────────────────────────────
 // Define expected columns and validation rules for each query by subsection name
 
-const QUERY_EXPECTATIONS = {
+const QUERY_EXPECTATIONS: Record<string, QueryExpectation> = {
   'Entry points': {
     columns: ['path', 'entries'],
     validate: (rows) => {
@@ -61,7 +92,7 @@ const QUERY_EXPECTATIONS = {
       for (const row of rows) {
         if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
         if (typeof row.aiSessions !== 'number' || row.aiSessions < 0) return 'aiSessions should be a non-negative number';
-        if (row.aiSessions > row.total) return 'aiSessions should not exceed total';
+        if ((row.aiSessions as number) > (row.total as number)) return 'aiSessions should not exceed total';
       }
       return null;
     },
@@ -81,7 +112,7 @@ const QUERY_EXPECTATIONS = {
       for (const row of rows) {
         if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
         if (typeof row.ai !== 'number' || row.ai < 0) return 'ai should be a non-negative number';
-        if (row.ai > row.total) return 'ai should not exceed total';
+        if ((row.ai as number) > (row.total as number)) return 'ai should not exceed total';
       }
       return null;
     },
@@ -101,7 +132,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.visits !== 'number' || row.visits < 0) return 'visits should be a non-negative number';
-        if (row.avgScroll !== null && (row.avgScroll < 0 || row.avgScroll > 100)) {
+        if (row.avgScroll !== null && ((row.avgScroll as number) < 0 || (row.avgScroll as number) > 100)) {
           return 'avgScroll should be between 0 and 100';
         }
       }
@@ -122,7 +153,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.path !== 'string') return 'path should be a string';
-        if (row.avgScrollDepth !== null && (row.avgScrollDepth < 0 || row.avgScrollDepth > 100)) {
+        if (row.avgScrollDepth !== null && ((row.avgScrollDepth as number) < 0 || (row.avgScrollDepth as number) > 100)) {
           return 'avgScrollDepth should be between 0 and 100';
         }
         if (typeof row.visits !== 'number' || row.visits < 0) return 'visits should be a non-negative number';
@@ -137,8 +168,8 @@ const QUERY_EXPECTATIONS = {
         if (typeof row.path !== 'string') return 'path should be a string';
         if (typeof row.total !== 'number' || row.total < 0) return 'total should be a non-negative number';
         if (typeof row.completed !== 'number' || row.completed < 0) return 'completed should be a non-negative number';
-        if (row.completed > row.total) return 'completed should not exceed total';
-        if (row.completionRate !== null && (row.completionRate < 0 || row.completionRate > 100)) {
+        if ((row.completed as number) > (row.total as number)) return 'completed should not exceed total';
+        if (row.completionRate !== null && ((row.completionRate as number) < 0 || (row.completionRate as number) > 100)) {
           return 'completionRate should be between 0 and 100';
         }
       }
@@ -150,8 +181,8 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.path !== 'string') return 'path should be a string';
-        if (row.avgTime !== null && row.avgTime < 0) return 'avgTime should be non-negative';
-        if (row.avgScroll !== null && (row.avgScroll < 0 || row.avgScroll > 100)) {
+        if (row.avgTime !== null && (row.avgTime as number) < 0) return 'avgTime should be non-negative';
+        if (row.avgScroll !== null && ((row.avgScroll as number) < 0 || (row.avgScroll as number) > 100)) {
           return 'avgScroll should be between 0 and 100';
         }
       }
@@ -183,7 +214,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.path !== 'string') return 'path should be a string';
-        if (row.searchRate !== null && (row.searchRate < 0 || row.searchRate > 100)) {
+        if (row.searchRate !== null && ((row.searchRate as number) < 0 || (row.searchRate as number) > 100)) {
           return 'searchRate should be between 0 and 100';
         }
       }
@@ -204,7 +235,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.sessions !== 'number' || row.sessions < 0) return 'sessions should be a non-negative number';
-        if (row.avgPages !== null && row.avgPages < 0) return 'avgPages should be non-negative';
+        if (row.avgPages !== null && (row.avgPages as number) < 0) return 'avgPages should be non-negative';
       }
       return null;
     },
@@ -216,7 +247,7 @@ const QUERY_EXPECTATIONS = {
         if (typeof row.sessionId !== 'string') return 'sessionId should be a string';
         if (!Array.isArray(row.journey)) return 'journey should be an array';
         if (typeof row.journeyLength !== 'number' || row.journeyLength < 0) return 'journeyLength should be a non-negative number';
-        if (row.journey.length !== row.journeyLength) return 'journeyLength should match journey array length';
+        if ((row.journey as unknown[]).length !== row.journeyLength) return 'journeyLength should match journey array length';
       }
       return null;
     },
@@ -282,7 +313,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.readers !== 'number' || row.readers < 0) return 'readers should be a non-negative number';
-        if (row.avgDwell !== null && row.avgDwell < 0) return 'avgDwell should be non-negative';
+        if (row.avgDwell !== null && (row.avgDwell as number) < 0) return 'avgDwell should be non-negative';
       }
       return null;
     },
@@ -367,7 +398,7 @@ const QUERY_EXPECTATIONS = {
       for (const row of rows) {
         if (typeof row.path !== 'string') return 'path should be a string';
         if (typeof row.pageViews !== 'number' || row.pageViews < 0) return 'pageViews should be a non-negative number';
-        if (row.avgScrollDepth !== null && (row.avgScrollDepth < 0 || row.avgScrollDepth > 100)) {
+        if (row.avgScrollDepth !== null && ((row.avgScrollDepth as number) < 0 || (row.avgScrollDepth as number) > 100)) {
           return 'avgScrollDepth should be between 0 and 100';
         }
       }
@@ -379,7 +410,7 @@ const QUERY_EXPECTATIONS = {
     validate: (rows) => {
       for (const row of rows) {
         if (typeof row.visits !== 'number' || row.visits < 0) return 'visits should be a non-negative number';
-        if (row.avgScroll !== null && (row.avgScroll < 0 || row.avgScroll > 100)) {
+        if (row.avgScroll !== null && ((row.avgScroll as number) < 0 || (row.avgScroll as number) > 100)) {
           return 'avgScroll should be between 0 and 100';
         }
       }
@@ -427,16 +458,16 @@ const QUERY_EXPECTATIONS = {
 
 // ─── Parse queries from QUERIES.md ──────────────────────────────────────────
 
-function extractQueries(markdown) {
-  const queries = [];
+function extractQueries(markdown: string): Query[] {
+  const queries: Query[] = [];
   const codeBlockRegex = /```apl\n([\s\S]*?)```/g;
-  
+
   let currentSection = '';
   let currentSubsection = '';
-  
-  let match;
+
+  let match: RegExpExecArray | null;
   let lastIndex = 0;
-  
+
   while ((match = codeBlockRegex.exec(markdown)) !== null) {
     const textBefore = markdown.slice(lastIndex, match.index);
     const headerMatches = textBefore.match(/^##+ .+$/gm);
@@ -450,7 +481,7 @@ function extractQueries(markdown) {
         }
       }
     }
-    
+
     const query = match[1].trim();
     queries.push({
       section: currentSection,
@@ -458,18 +489,18 @@ function extractQueries(markdown) {
       query,
       index: queries.length + 1,
     });
-    
+
     lastIndex = match.index + match[0].length;
   }
-  
+
   return queries;
 }
 
 // ─── Axiom query ────────────────────────────────────────────────────────────
 
-async function runQuery(apl) {
+async function runQuery(apl: string): Promise<QueryResult> {
   const adjustedApl = apl.replace(/\['do11y'\]/g, `['${AXIOM_DATASET}']`);
-  
+
   const body = JSON.stringify({
     apl: adjustedApl,
     startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -487,19 +518,24 @@ async function runQuery(apl) {
   });
 
   const text = await res.text();
-  
+
   if (!res.ok) {
     let errorMsg = text;
     try {
-      const parsed = JSON.parse(text);
-      errorMsg = parsed.message || parsed.error || text;
-    } catch {}
+      const parsed = JSON.parse(text) as { message?: string; error?: string };
+      errorMsg = parsed.message ?? parsed.error ?? text;
+    } catch { /* ignore */ }
     throw new Error(`${res.status}: ${errorMsg}`);
   }
 
-  let data;
+  let data: {
+    tables?: Array<{
+      fields?: Array<{ name: string }>;
+      columns?: unknown[][];
+    }>;
+  };
   try {
-    data = JSON.parse(text);
+    data = JSON.parse(text) as typeof data;
   } catch {
     throw new Error(`Non-JSON response: ${text.slice(0, 200)}`);
   }
@@ -508,11 +544,11 @@ async function runQuery(apl) {
   const table = data.tables?.[0];
   if (table?.fields && table?.columns) {
     const fieldNames = table.fields.map(f => f.name);
-    const numRows = table.columns[0]?.length || 0;
-    const rows = [];
+    const numRows = table.columns[0]?.length ?? 0;
+    const rows: Row[] = [];
     for (let j = 0; j < numRows; j++) {
-      const obj = {};
-      fieldNames.forEach((name, i) => { obj[name] = table.columns[i]?.[j]; });
+      const obj: Row = {};
+      fieldNames.forEach((name, i) => { obj[name] = table.columns![i]?.[j]; });
       rows.push(obj);
     }
     return { rows, columns: fieldNames };
@@ -523,14 +559,14 @@ async function runQuery(apl) {
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
-function validateResult(queryName, result) {
+function validateResult(queryName: string, result: QueryResult): string[] | null {
   const expectation = QUERY_EXPECTATIONS[queryName];
   if (!expectation) {
     return null; // No expectations defined, skip validation
   }
 
   const { rows, columns } = result;
-  const errors = [];
+  const errors: string[] = [];
 
   // Check expected columns exist
   for (const col of expectation.columns) {
@@ -552,7 +588,7 @@ function validateResult(queryName, result) {
 
 // ─── Main ───────────────────────────────────────────────────────────────────
 
-async function main() {
+async function main(): Promise<void> {
   console.log('Do11y QUERIES.md Test Runner');
   console.log('='.repeat(60));
   console.log(`Axiom domain: ${AXIOM_DOMAIN}`);
@@ -565,28 +601,27 @@ async function main() {
     console.error(`QUERIES.md not found at ${queriesPath}`);
     process.exit(1);
   }
-  
+
   const markdown = fs.readFileSync(queriesPath, 'utf-8');
   const queries = extractQueries(markdown);
-  
+
   console.log(`Found ${queries.length} queries to test\n`);
 
   let passed = 0;
   let failed = 0;
-  const failures = [];
+  const failures: Failure[] = [];
 
   for (const q of queries) {
     const name = q.subsection || q.section;
     const prefix = `[${q.index}/${queries.length}]`;
-    
+
     process.stdout.write(`${prefix} ${name}... `);
-    
+
     try {
       const result = await runQuery(q.query);
-      
-      // Validate the result
+
       const validationErrors = validateResult(name, result);
-      
+
       if (validationErrors) {
         console.log(`✗ (validation failed)`);
         for (const err of validationErrors) {
@@ -606,15 +641,15 @@ async function main() {
       }
     } catch (err) {
       console.log(`✗`);
-      console.log(`    Error: ${err.message}`);
+      console.log(`    Error: ${(err as Error).message}`);
       failed++;
       failures.push({
         name,
         query: q.query,
-        error: err.message,
+        error: (err as Error).message,
       });
     }
-    
+
     // Small delay to avoid rate limiting
     await new Promise(r => setTimeout(r, 100));
   }
@@ -638,7 +673,7 @@ async function main() {
     }
     process.exit(1);
   }
-  
+
   console.log('\nAll queries passed!');
 }
 
