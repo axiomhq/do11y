@@ -1,28 +1,93 @@
 # Axiom Do11y
 
-Documentation observability for Axiom. A single, dependency-free JavaScript file that tracks how people use your documentation — page views, scroll depth, link clicks, search usage, code-block copies, section reading time, tab switches, TOC usage, feedback, and expand/collapse interactions — and sends the data to [Axiom](https://axiom.co).
+Do11y is a documentation observability solution from [Axiom](https://axiom.co). It turns documentation usage into machine data. It streams behavioral events like the ones below from your docs site to Axiom in real time:
+
+- Page views
+- Scroll depth
+- Link clicks
+- Search queries
+- Code-block copies
+- Section reading time
+- Tab switches
+- Table of contents (TOC) usage
+- Feedback widget usage
+- Expand/collapse interactions
+
+Do11y is built for humans and machines alike. It emits observability data designed to be easy to use for human users, while also being easy to query and analyze for machines.
+
+Do11y is agent-native: in an era where AI assistants and autonomous agents increasingly read and cite documentation alongside human users, Do11y detects AI platform referrers (ChatGPT, Perplexity, Claude, Gemini, and others) so you can understand how agents and humans engage with your content differently.
+
+The runtime artifact is a single dependency-free JavaScript file. The source is TypeScript (`src/do11y.ts`). [rolldown](https://rolldown.rs) produces the built output.
 
 ## Privacy
 
-Do11y collects anonymous usage data without:
+Do11y collects anonymous usage data:
 
-- Cookies (uses `sessionStorage` only — cleared when the browser closes)
-- Personal identifiable information (PII)
-- Device fingerprinting
-- Cross-site tracking
+- No cookies. Do11y uses `sessionStorage`, which the browser clears when it closes.
+- No personal identifiable information (PII).
+- No device fingerprinting.
+- No cross-site tracking.
 
-No GDPR consent banner is required.
+You don't need a GDPR consent banner for using Do11y.
 
-## Quick start
+## Prerequisites
 
-The `dist/` directory contains the files you need:
+1. [Create an Axiom account](https://app.axiom.co/register).
+1. [Create a dataset in Axiom](https://axiom.co/docs/reference/datasets#create-dataset) to store observability data for your documentation site.
+1. [Create an API token in Axiom](https://axiom.co/docs/reference/tokens) with **ingest-only** permissions scoped to the dataset.
 
-- `do11y.js` -- the main script
-- `do11y-config.example.js` -- example configuration (copy and rename to `do11y-config.js`)
+## Quickstart
 
-1. Copy `dist/do11y.js` and `dist/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+### Option 1: CDN (recommended)
 
-2. Add both scripts to every page, with the config file loading first:
+Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
+
+```html
+<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
+<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
+<meta name="axiom-do11y-dataset" content="do11y">
+<meta name="axiom-do11y-framework" content="mintlify">
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset. To pin a specific version, replace `@1.0.0` with the desired version tag.
+
+#### Advanced configuration via CDN
+
+Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) such as scroll thresholds, tracking toggles, or custom selectors, set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
+
+```html
+<script>
+window.Do11yConfig = {
+  axiomHost: 'us-east-1.aws.edge.axiom.co',
+  axiomToken: 'xaat-your-ingest-token',
+  axiomDataset: 'do11y',
+  framework: 'vitepress',
+  scrollThresholds: [25, 50, 75, 100],
+  trackFeedback: false,
+  sectionVisibleThreshold: 5,
+  // Any option from the Configuration table below can be set here
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
+
+### Option 2: Self-host
+
+If you can't use a CDN, self-host the script.
+
+The repo doesn't include the built bundles (`do11y.js`, `do11y.min.js`). Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
+
+```bash
+npm install @axiomhq/do11y
+# Bundles: node_modules/@axiomhq/do11y/dist/do11y.js (and do11y.min.js)
+# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.js
+```
+
+1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Add both scripts to every page, with the config file loading first:
 
 ```html
 <script src="/path/to/do11y-config.js"></script>
@@ -31,36 +96,19 @@ The `dist/` directory contains the files you need:
 
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
-
-Do not edit `do11y.js` directly -- this allows you to update to new versions without losing your configuration.
-
-### Alternative: meta tags
-
-If you only need to set the essentials, you can use meta tags instead of a config file:
-
-```html
-<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
-<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
-<meta name="axiom-do11y-dataset" content="do11y">
-<meta name="axiom-do11y-framework" content="mintlify">
-```
-
-Meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults in `do11y.js`.
-
-3. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset.
+Don't edit `do11y.js` directly. It's a build artifact and updating to a new release overwrites it.
 
 ## Configuration
 
-All options can be set in `do11y-config.js` (via `window.Do11yConfig`), meta tags, or the `config` object at the top of `do11y.js`. Using the config file or meta tags is recommended so you can update `do11y.js` without losing your settings.
+All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags.
 
 ### Axiom connection
 
 | Option | Default | Description |
 |---|---|---|
-| `axiomHost` | `'AXIOM_DOMAIN'` | Axiom ingest endpoint. Use an [edge deployment](https://axiom.co/docs/reference/edge-deployments) domain for lower latency. |
-| `axiomDataset` | `'DATASET_NAME'` | Target Axiom dataset. |
-| `axiomToken` | `'API_TOKEN'` | Ingest-only API token. |
+| `axiomHost` | `'AXIOM_DOMAIN'` | Base domain of the edge deployment where you want to store your data. For more information, see [Edge deployments](https://axiom.co/docs/reference/edge-deployments). |
+| `axiomDataset` | `'DATASET_NAME'` | Name of the Axiom dataset where you want to store your data. |
+| `axiomToken` | `'API_TOKEN'` | Ingest-only API token scoped to the dataset. |
 
 ### Behavior
 
@@ -99,7 +147,7 @@ Set `framework` to auto-configure CSS selectors for your docs platform:
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
 | `'custom'` | Provide your own selectors (see below) |
 
-When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. You can also set the framework via a meta tag:
+When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. Optional: Set the framework via a meta tag:
 
 ```html
 <meta name="axiom-do11y-framework" content="docusaurus">
@@ -128,16 +176,16 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `page_view` | Fires on every page load or SPA navigation. | `referrerDomain`, `referrerCategory`, `aiPlatform`, `isFirstPage`, `previousPath` |
 | `link_click` | Internal, external, anchor, or email link click. | `linkType`, `targetUrl`, `linkText`, `linkContext`, `linkSection`, `linkIndex` |
 | `scroll_depth` | User scrolls past a configured threshold. | `threshold`, `scrollPercent` |
-| `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth` |
+| `page_exit` | Fires on `beforeunload`. | `totalTimeSeconds`, `activeTimeSeconds`, `engagementRatio`, `maxScrollDepth`, `referrerCategory`, `aiPlatform` |
 | `search_opened` | User opens the search dialog (click or Cmd/Ctrl+K). | `trigger` |
 | `code_copied` | User clicks a code block's copy button. | `language`, `codeSection`, `codeBlockIndex` |
-| `section_visible` | A heading was visible in the viewport long enough to be read. | `heading`, `headingLevel`, `visibleSeconds` |
+| `section_visible` | A heading stayed visible in the viewport long enough for the user to read it. | `heading`, `headingLevel`, `visibleSeconds` |
 | `tab_switch` | User switches a code language/framework tab. | `tabLabel`, `tabGroup`, `isDefault` |
 | `toc_click` | User clicks an entry in the on-page table of contents. | `heading`, `headingLevel`, `tocPosition` |
 | `feedback` | User clicks a "Was this helpful?" button. | `rating` |
 | `expand_collapse` | User toggles a `<details>` element or accordion. | `summary`, `action`, `section` |
 
-Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, `timezoneOffset`.
+Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, and `timezoneOffset`.
 
 ## Example queries
 
@@ -158,18 +206,18 @@ Do11y exposes `window.AxiomDo11y` for debugging and integration:
 ```javascript
 AxiomDo11y.getConfig()    // Current config (token redacted)
 AxiomDo11y.isEnabled()    // Whether tracking is active
-AxiomDo11y.debug(true)    // Toggle console logging
 AxiomDo11y.flush()        // Force-send queued events
 AxiomDo11y.getQueueSize() // Number of queued events
-AxiomDo11y.cleanup()      // Disconnect observers and flush (for SPA unmount)
 AxiomDo11y.version        // Script version
 ```
+
+Do11y doesn't expose `cleanup()` and `debug()` on the global object. Exposing `cleanup()` would allow any third-party script on the page to silently stop tracking. Exposing `debug()` would allow any script to enable verbose console output that reveals the configured ingest endpoint and queued event data.
 
 ## Tests
 
 The `tests` directory contains multiple layers of testing.
 
-### Selector tests against live sites (`tests/test-live-sites.js`)
+### Selector tests against live sites (`tests/test-live-sites.ts`)
 
 Runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production.
 
@@ -180,7 +228,7 @@ npx puppeteer browsers install chrome
 npm run test-live-sites
 ```
 
-Sites tested:
+The test covers the following sites:
 
 | Framework | URL |
 |---|---|
@@ -191,7 +239,7 @@ Sites tested:
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
 
-### Query validation (`tests/test-queries.js`)
+### Query validation (`tests/test-queries.ts`)
 
 Validates that all APL queries in [QUERIES.md](QUERIES.md) are syntactically correct by executing them against the Axiom API.
 
@@ -200,7 +248,7 @@ cd tests
 npm run test-queries
 ```
 
-### Integration tests (`tests/test-integrations.js`)
+### Integration tests (`tests/test-integrations.ts`)
 
 End-to-end tests that install each supported framework, inject `do11y.js`, start a local dev server, drive user interactions via Puppeteer, and then query the Axiom API to verify that events arrived correctly.
 
@@ -218,7 +266,7 @@ AXIOM_TOKEN=xaat-your-ingest-token
 AXIOM_DATASET=do11y
 ```
 
-The token needs both **ingest** and **query** permissions on the target dataset.
+The token requires both **ingest** and **query** permissions on the target dataset.
 
 Run the full suite:
 
@@ -238,7 +286,7 @@ Skip dependency installation on repeat runs:
 SKIP_INSTALL=1 npm run test-integrations
 ```
 
-**Frameworks tested:**
+The test covers the following frameworks:
 
 | Name | Type | Port | Notes |
 |---|---|---|---|
@@ -247,18 +295,22 @@ SKIP_INSTALL=1 npm run test-integrations
 | `docusaurus` | npm (Docusaurus 3) | 4001 | Full framework install |
 | `nextra` | npm (Next.js + Nextra 3) | 4002 | Full framework install |
 | `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
-| `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python; skipped if unavailable |
+| `mkdocs-material` | pip (MkDocs Material) | 4004 | Requires Python. Skips if unavailable. |
 
-**Events validated per framework:**
+The test validates the following events per framework:
 
-| Event | Minimum expected |
-|---|---|
-| `page_view` | 2 (start page + guide page) |
-| `scroll_depth` | 1 |
-| `link_click` | 1 |
-| `page_exit` | 1 |
-| `search_opened` | 0 (best-effort) |
-| `code_copied` | 0 (best-effort) |
+| Event | Minimum expected | Notes |
+|---|---|---|
+| `page_view` | 2 | Start page + guide page |
+| `scroll_depth` | 1 | |
+| `link_click` | 1 | |
+| `page_exit` | 1 | |
+| `expand_collapse` | 0 | Best-effort, requires `<details>` in DOM |
+| `toc_click` | 0 | Best-effort. GitBook static has no on-page TOC. The automated test cannot synthesise a VitePress TOC click (Vue's reactive rendering replaces the link node before the synthetic event fires) |
+| `search_opened` | 0 | Best-effort. No search button in GitBook static build |
+| `code_copied` | 0 | Best-effort. GitBook exposes no identifiable copy button selectors |
+| `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
+| `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## AI traffic detection
 
@@ -269,9 +321,9 @@ Do11y classifies referrer domains to detect traffic from AI platforms such as Ch
 | `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
 | `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
 
-This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. No fingerprinting, user-agent parsing, or additional data collection is involved.
+This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. Do11y uses no fingerprinting, user-agent parsing, or additional data collection.
 
-**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) do not pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
 
 See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
 
@@ -279,44 +331,38 @@ See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including pe
 
 ### Copy-button detection on GitBook
 
-The `copyButtonSelector` does not match copy buttons on **GitBook** sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
+The `copyButtonSelector` doesn't match copy buttons on GitBook sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
 
 **Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
 
 ### Custom themes
 
-The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, you may need to set the selectors manually.
+The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, check whether you need to set the selectors manually.
 
 ### Framework selector drift
 
-CSS selectors are based on each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.js` and `test-queries.js`) exist specifically to catch this. Run them periodically to verify selectors still match.
+CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
 ## Automatic sync to your docs repo
 
-The included GitHub Action (`.github/workflows/sync-to-docs.yml`) can automatically open a PR in your docs repo whenever you publish a new do11y release. This keeps the copy of `do11y.js` in your docs site in sync without manual copying.
+If you self-host `do11y.js`, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically. Copy it to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
 
 ### Setup
 
-Configure the workflow in your fork or copy of this repo under **Settings > Secrets and variables > Actions**:
-
-**Variables:**
+Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
 
 | Variable | Example | Description |
 |---|---|---|
-| `DOCS_REPO` | `axiomhq/docs` | Target docs repo in `owner/name` format. |
-| `DOCS_DEST_PATH` | `styles/do11y.js` | Path where `do11y.js` lives in the target repo. |
+| `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
+| `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
 
-**Secrets:**
+You don't need to add any secrets.
 
-| Secret | Description |
-|---|---|
-| `DOCS_REPO_TOKEN` | A GitHub Personal Access Token with `contents: write` and `pull_requests: write` permissions on the target docs repo. |
-
-To create the token: go to **GitHub > Settings > Developer settings > Fine-grained tokens**, create a token scoped to your docs repo with the permissions above, and store it as `DOCS_REPO_TOKEN` in this repo's action secrets.
+## Development
 
 ### Creating a release
 
-Tag and release to trigger the sync:
+Bump the version in `package.json`, then tag and release:
 
 ```bash
 git tag v1.1.0
@@ -324,9 +370,49 @@ git push origin v1.1.0
 gh release create v1.1.0
 ```
 
-The workflow checks out both repos, copies `do11y.js` to the configured destination, and opens a PR in your docs repo titled "Update do11y.js to v1.1.0". If the file hasn't changed, the workflow skips the PR.
+Publishing a release triggers `publish.yml`, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
 
-The workflow only replaces `do11y.js` itself. Your `do11y-config.js` and meta tags are not affected. See [Quick start](#quick-start) for how to set up configuration separately.
+The sync workflow only replaces `do11y.js` itself and leaves your `do11y-config.js` and meta tags untouched. See [Quickstart](#quickstart) for how to set up configuration separately.
+
+### Repository layout
+
+```
+do11y/
+├── src/
+│   └── do11y.ts          ← TypeScript source
+├── examples/
+│   └── do11y-config.example.js  ← self-host config template (tracked in git)
+├── dist/                  ← built output (git-ignored)
+│   ├── do11y.js
+│   └── do11y.min.js
+├── package.json
+├── tsconfig.json
+├── rolldown.config.ts
+├── .oxlintrc.json
+└── .github/workflows/
+    ├── publish.yml        ← npm publish on release
+    └── sync-do11y-to-docs.yml   ← weekly update workflow (copy to your docs repo)
+```
+
+### Toolchain
+
+| Tool | Purpose |
+|---|---|
+| [TypeScript](https://www.typescriptlang.org) | Type checking (`npm run check`) |
+| [rolldown](https://rolldown.rs) | Bundling to IIFE (`npm run build`) |
+| [oxlint](https://oxc.rs/docs/guide/usage/linter) | Linting (`npm run lint`) |
+| [oxfmt](https://oxc.rs/docs/guide/usage/formatter) | Formatting (`npm run format`) |
+
+### Local setup
+
+```bash
+npm install
+npm run build   # outputs dist/do11y.js and dist/do11y.min.js (see examples/ for config template)
+npm run check   # TypeScript type checking
+npm run lint    # oxlint
+```
+
+All source changes go in `src/do11y.ts`. The build produces the `dist/` directory, which git ignores. The self-host config template lives in `examples/do11y-config.example.js` and ships with the package.
 
 ## License
 
