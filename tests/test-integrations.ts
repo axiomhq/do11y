@@ -678,8 +678,11 @@ function validateEvents(
   log(`Frameworks: ${frameworkNames.join(', ')}\n`);
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const puppeteer = require('puppeteer') as { launch: (opts: { headless: boolean }) => Promise<Browser> };
-  const browser = await puppeteer.launch({ headless: true });
+  const puppeteer = require('puppeteer') as { launch: (opts: { headless: boolean; args?: string[] }) => Promise<Browser> };
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox'] : [],
+  });
 
   const servers: http.Server[] = [];
   const processes: ChildProcess[] = [];
