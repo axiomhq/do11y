@@ -679,8 +679,6 @@ function scheduleFlush(): void {
  * Add new Axiom edge-deployment domains here as they are provisioned.
  */
 const AXIOM_ALLOWED_HOSTS: ReadonlySet<string> = new Set([
-  'api.axiom.co',
-  'cloud.axiom.co',
   'us-east-1.aws.edge.axiom.co',
   'eu-central-1.aws.edge.axiom.co',
 ]);
