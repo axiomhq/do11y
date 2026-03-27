@@ -55,6 +55,7 @@ interface Framework {
   readyPattern?: RegExp;
   buildCmd?: string;
   injectDo11y?: boolean;
+  scaffoldFn?: () => void;
   startPage: string;
   guidePage: string;
 }
@@ -136,6 +137,28 @@ const FRAMEWORKS: Record<string, Framework> = {
     startCmd: 'npm',
     startArgs: ['run', 'start'],
     readyPattern: /vitepress.*started|localhost:4003/i,
+    scaffoldFn: () => {
+      const vpDir = path.join(SITES_DIR, 'vitepress', '.vitepress');
+      const themeDir = path.join(vpDir, 'theme');
+      fs.mkdirSync(themeDir, { recursive: true });
+      fs.writeFileSync(path.join(vpDir, 'config.js'), `export default {
+  title: 'Do11y Test - VitePress',
+  head: [
+    ['meta', { name: 'axiom-do11y-framework', content: 'vitepress' }],
+    ['meta', { name: 'axiom-do11y-debug', content: 'true' }],
+    ['meta', { name: 'axiom-do11y-domains', content: 'localhost' }],
+    ['script', { src: '/do11y.js' }],
+  ],
+  themeConfig: {
+    sidebar: [
+      { text: 'Introduction', link: '/' },
+      { text: 'Guide', link: '/guide' },
+    ],
+  },
+};\n`);
+      fs.writeFileSync(path.join(themeDir, 'index.js'), `import DefaultTheme from 'vitepress/theme';
+export default { extends: DefaultTheme };\n`);
+    },
     startPage: '/',
     guidePage: '/guide',
   },
@@ -721,11 +744,14 @@ function validateEvents(
       }
     }
 
-    // 1. Patch and deploy do11y.js
+    // 1. Scaffold framework config files if needed (e.g. VitePress .vitepress/)
+    if (fw.scaffoldFn) fw.scaffoldFn();
+
+    // 1b. Patch and deploy do11y.js
     log('  Patching do11y.js…');
     patchDo11y(fw.do11yDest, name, testRunId);
 
-    // 1b. Inject do11y meta/script tags into pre-built HTML
+    // 1c. Inject do11y meta/script tags into pre-built HTML
     if (fw.injectDo11y && fw.staticDir) {
       log('  Injecting do11y tags into HTML…');
       injectDo11yTags(fw.staticDir);
