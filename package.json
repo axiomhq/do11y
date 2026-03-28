@@ -1,6 +1,6 @@
 {
   "name": "@axiomhq/do11y",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Documentation observability for Axiom",
   "type": "module",
   "files": [
