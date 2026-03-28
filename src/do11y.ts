@@ -125,6 +125,8 @@ declare global {
   }
 }
 
+const VERSION = '1.0.0';
+
 // Prevent double-initialization in SPA frameworks (React strict mode,
 // Next.js/Nextra re-renders, etc.) where the script tag may be re-evaluated.
 const _alreadyLoaded = !!window.__axiomDo11yInitialized;
@@ -639,6 +641,7 @@ function queueEvent(eventType: string, eventData: Record<string, unknown>): void
   const event: Do11yEvent = {
     _time: new Date().toISOString(),
     eventType,
+    'do11y.version': VERSION,
     sessionId: session.id,
     sessionPageCount: session.pageCount,
     ...getPageInfo(),
@@ -1587,5 +1590,5 @@ window.AxiomDo11y = window.AxiomDo11y ?? {
   flush,
   isEnabled: () => !isDisabled && !!config.axiomToken,
   getQueueSize: () => eventQueue.length,
-  version: '1.0.0',
+  version: VERSION,
 };
