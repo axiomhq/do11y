@@ -641,7 +641,7 @@ function queueEvent(eventType: string, eventData: Record<string, unknown>): void
   const event: Do11yEvent = {
     _time: new Date().toISOString(),
     eventType,
-    'do11y.version': VERSION,
+    'do11y_version': VERSION,
     sessionId: session.id,
     sessionPageCount: session.pageCount,
     ...getPageInfo(),
