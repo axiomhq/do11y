@@ -484,7 +484,9 @@ async function runInteractions(browser: Browser, baseUrl: string, fw: Framework)
     const relPath = gp.startsWith('/') ? gp.slice(1) : gp;
     const linkSel = [gp, `${gp}.html`, `${gp}/`, relPath, `${relPath}.html`, `${relPath}/`, `${relPath}.md`]
       .map((h) => `a[href="${h}"]`).join(', ');
-    await page.waitForSelector(linkSel, { timeout: 5000 });
+    // Use a generous timeout: Next.js dev server compiles routes on demand,
+    // so in CI the guide page route may not be ready within 5 s.
+    await page.waitForSelector(linkSel, { timeout: 10000 });
     // Scroll the link into view first (needed for VitePress/Docusaurus where
     // the link may be below the fold)
     await page.evaluate((sel: string) => {
@@ -501,12 +503,16 @@ async function runInteractions(browser: Browser, baseUrl: string, fw: Framework)
   }
   await sleep(1500);
 
-  // 9. Trigger page_exit by navigating away
+  // 9. Trigger page_exit.
+  // page.goto('about:blank') does not reliably fire beforeunload in headless
+  // Chrome on Linux (CI). page.close({ runBeforeUnload: true }) is the
+  // Puppeteer-idiomatic way to guarantee the beforeunload event fires, which
+  // triggers emitPageExit() → flushVisibleSections() → cleanup() → flushSync().
   log('  → page_exit');
-  await page.goto('about:blank');
-  await sleep(1000);
-
-  await page.close();
+  await page.close({ runBeforeUnload: true });
+  // Allow the keepalive fetch dispatched by flushSync() to finish before the
+  // test runner proceeds to shut down servers and query Axiom.
+  await sleep(2000);
 }
 
 async function autoScroll(page: Page): Promise<void> {
