@@ -43,14 +43,14 @@ You don't need a GDPR consent banner for using Do11y.
 Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
 
 ```html
-<meta name="axiom-do11y-domain" content="us-east-1.aws.edge.axiom.co">
-<meta name="axiom-do11y-token" content="xaat-your-ingest-token">
-<meta name="axiom-do11y-dataset" content="do11y">
-<meta name="axiom-do11y-framework" content="mintlify">
+<meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
+<meta name="axiom-do11y-token" content="API_TOKEN">
+<meta name="axiom-do11y-dataset" content="DATASET_NAME">
+<meta name="axiom-do11y-framework" content="FRAMEWORK">
 <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
 ```
 
-Replace the meta tag values with your Axiom credentials and docs framework. Create an API token in Axiom with **ingest-only** permissions scoped to a single dataset. To pin a specific version, replace `@1.0.0` with the desired version tag.
+Replace the meta tag values with your Axiom credentials and docs framework. To pin a specific version, replace `@1.0.0` with the desired version tag.
 
 #### Advanced configuration via CDN
 
@@ -97,6 +97,75 @@ npm install @axiomhq/do11y
 For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
 
 Don't edit `do11y.js` directly. It's a build artifact and updating to a new release overwrites it.
+
+## Query data
+
+Once you've installed Do11y and information about your documentation usage is flowing into Axiom, you can query the data in Axiom. See [QUERIES.md](QUERIES.md) for exampleAPL queries to analyze your documentation, including:
+
+- AI traffic detection and trends
+- Traffic sources and entry points
+- Page engagement and scroll completion
+- Where users get stuck (exit pages, low engagement)
+- Navigation patterns and user journeys
+- Link and CTA performance
+- Code block engagement
+
+For more information, see [Query data with Axiom](https://axiom.co/docs/query-data/explore).
+
+## Integration dashboard
+
+An integration dashboard provides a visual overview of your documentation usage. It shows important metrics like the number of page views, scroll depth, link clicks, code-block copies, section reading time, tab switches, TOC usage, feedback widget usage, and expand/collapse interactions. It's automatically created when you add Do11y to your docs site.
+
+To access the integration dashboard:
+1. In Axiom, click **Dashboards**.
+1. In the **Integrations** section, click the integration dashboard **Documentation observability (Do11y) (DATASET_NAME)**.
+
+Alternatively, access the integration dashboard with the URL `https://app.axiom.co/ORG_ID/dashboards/do11y.DATASET_NAME`.
+
+## AI traffic detection
+
+Do11y classifies referrer domains to detect traffic from AI platforms such as ChatGPT, Perplexity, Claude, Gemini, Copilot, DeepSeek, and others. Each `page_view` event includes:
+
+| Field | Values | Description |
+|---|---|---|
+| `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
+| `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
+
+This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. Do11y uses no fingerprinting, user-agent parsing, or additional data collection.
+
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
+
+See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
+
+## Known limitations
+
+### Copy-button detection on GitBook
+
+The `copyButtonSelector` doesn't match copy buttons on GitBook sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
+
+**Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
+
+### Custom themes
+
+The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, check whether you need to set the selectors manually.
+
+### Framework selector drift
+
+CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
+
+## Automatic sync to your docs repo
+
+If you self-host `do11y.js` in GitHub repo, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically.
+
+1. Copy `.github/workflows/sync-do11y-to-docs.yml` to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
+1. Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
+
+    | Variable | Example | Description |
+    |---|---|---|
+    | `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
+    | `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
+
+You don't need to add any secrets.
 
 ## Configuration
 
@@ -186,18 +255,6 @@ Set `framework: 'custom'` and provide any combination of these selectors. Any se
 | `expand_collapse` | User toggles a `<details>` element or accordion. | `summary`, `action`, `section` |
 
 Every event also includes: `sessionId`, `sessionPageCount`, `path`, `hash`, `title`, `viewportCategory`, `browserFamily`, `deviceType`, `language`, and `timezoneOffset`.
-
-## Example queries
-
-See [QUERIES.md](QUERIES.md) for APL queries to analyze your documentation, including:
-
-- AI traffic detection and trends
-- Traffic sources and entry points
-- Page engagement and scroll completion
-- Where users get stuck (exit pages, low engagement)
-- Navigation patterns and user journeys
-- Link and CTA performance
-- Code block engagement
 
 ## JavaScript API
 
@@ -312,55 +369,9 @@ The test validates the following events per framework:
 | `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
-## AI traffic detection
-
-Do11y classifies referrer domains to detect traffic from AI platforms such as ChatGPT, Perplexity, Claude, Gemini, Copilot, DeepSeek, and others. Each `page_view` event includes:
-
-| Field | Values | Description |
-|---|---|---|
-| `referrerCategory` | `ai`, `search-engine`, `social`, `community`, `code-host`, `direct`, `internal`, `other`, `unknown` | High-level traffic source category. |
-| `aiPlatform` | `ChatGPT`, `Perplexity`, `Claude`, `Gemini`, `Copilot`, `DeepSeek`, `Meta AI`, `Grok`, `Mistral`, `You.com`, `Phind`, or `null` | Specific AI platform when `referrerCategory` is `ai`. |
-
-This detection is referrer-based: it checks whether the `document.referrer` hostname matches a known AI platform. Do11y uses no fingerprinting, user-agent parsing, or additional data collection.
-
-**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. These visits appear as `direct` traffic. Referrer-based detection typically captures 20-40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
-
-See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
-
-## Known limitations
-
-### Copy-button detection on GitBook
-
-The `copyButtonSelector` doesn't match copy buttons on GitBook sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
-
-**Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
-
-### Custom themes
-
-The selectors work on sites using the standard themes of each supported framework. Sites with heavily customized themes may render page elements differently. If you use a custom theme, check whether you need to set the selectors manually.
-
-### Framework selector drift
-
-CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
-
-## Automatic sync to your docs repo
-
-If you self-host `do11y.js`, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically. Copy it to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
-
-### Setup
-
-Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
-
-| Variable | Example | Description |
-|---|---|---|
-| `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
-| `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
-
-You don't need to add any secrets.
-
 ## Development
 
-### Creating a release
+### Create release
 
 Bump the version in `package.json`, then tag and release:
 
