@@ -6,8 +6,7 @@
   "main": "./dist/do11y.min.js",
   "exports": {
     ".": "./dist/do11y.min.js",
-    "./min": "./dist/do11y.min.js",
-    "./full": "./dist/do11y.js"
+    "./min": "./dist/do11y.min.js"
   },
   "files": [
     "dist",
