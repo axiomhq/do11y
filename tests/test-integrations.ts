@@ -13,9 +13,9 @@
  *   6. Queries the Axiom API to validate that the expected events arrived
  *
  * Required (set in .env in this directory):
- *   AXIOM_DOMAIN      — Axiom domain (e.g. axiom.co or dev.axiomtestlabs.co)
+ *   AXIOM_DOMAIN      — Axiom domain
  *   AXIOM_TOKEN       — API token with ingest + query permissions
- *   AXIOM_DATASET     — Dataset name (e.g. do11y-integration-test)
+ *   AXIOM_DATASET     — Dataset name
  *
  * Optional (can override in .env or shell):
  *   FRAMEWORKS      — Comma-separated list of frameworks to test (default: all)
