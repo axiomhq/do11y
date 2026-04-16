@@ -65,6 +65,7 @@ Break down AI traffic by platform (ChatGPT, Perplexity, Claude, etc.).
 ```apl
 ['do11y']
 | where eventType == 'page_view' and isFirstPage == true and referrerCategory == 'ai'
+| extend aiPlatform = column_ifexists('aiPlatform', '')
 | summarize sessions = count() by aiPlatform
 | order by sessions desc
 ```
@@ -92,6 +93,7 @@ Find which documentation pages AI platforms link to most.
 ```apl
 ['do11y']
 | where eventType == 'page_view' and isFirstPage == true and referrerCategory == 'ai'
+| extend aiPlatform = column_ifexists('aiPlatform', '')
 | summarize sessions = count() by path, aiPlatform
 | order by sessions desc
 | take 30
