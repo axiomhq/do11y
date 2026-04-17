@@ -373,7 +373,7 @@ The test validates the following events per framework:
 
 ### Create release
 
-Bump the version in `package.json`, then tag and release:
+Bump the version in `package.json` and `src/do11y.ts`, then tag and release:
 
 ```bash
 git tag v1.1.0
