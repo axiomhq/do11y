@@ -373,17 +373,33 @@ The test validates the following events per framework:
 
 ### Create release
 
-Bump the version in `package.json` and `src/do11y.ts`, then tag and release:
+1. Run all [tests](#tests).
+1. Run the following commands to build the package and run the tests:
 
-```bash
-git tag v1.1.0
-git push origin v1.1.0
-gh release create v1.1.0
-```
+    ```bash
+    npm run build
+    npm run check
+    npm run lint
+    ```
 
-Publishing a release triggers `publish.yml`, which builds the TypeScript source and publishes the package to npm as `@axiomhq/do11y`. Docs repos running the sync workflow will pick up the new release on their next scheduled run.
+1. Bump the version in `package.json` and `src/do11y.ts`.
+1. Tag and release via the GitHub CLI:
 
-The sync workflow only replaces `do11y.js` itself and leaves your `do11y-config.js` and meta tags untouched. See [Quickstart](#quickstart) for how to set up configuration separately.
+    ```bash
+    git tag v1.1.0
+    git push origin v1.1.0
+    gh release create v1.1.0
+    ```
+
+    Alternatively, use the GitHub UI to create a release at https://github.com/axiomhq/do11y/releases/new
+
+1. Publish the package to npm as `@axiomhq/do11y`. This requires access to the `@axiomhq` npm organization.
+
+    ```bash
+    npm login
+    npm publish --access public
+    npm logout
+    ```
 
 ### Repository layout
 
