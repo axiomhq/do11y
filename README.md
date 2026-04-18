@@ -449,11 +449,11 @@ The test validates the following events per framework:
 | `scroll_depth` | 1 | |
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
-| `expand_collapse` | 0 | Best-effort, requires `<details>` in DOM |
-| `toc_click` | 0 | Best-effort. The automated test cannot synthesise a VitePress TOC click (Vue's reactive rendering replaces the link node before the synthetic event fires) |
-| `search_opened` | 0 | Best-effort. |
-| `code_copied` | 0 | Best-effort. |
-| `feedback` | 0 | Best-effort. |
+| `expand_collapse` | 1 | |
+| `toc_click` | 1 | |
+| `search_opened` | 0 | |
+| `code_copied` | 1 | |
+| `feedback` | 0 | |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## Create release
