@@ -393,7 +393,7 @@ Do11y doesn't expose `cleanup()` and `debug()` on the global object. Exposing `c
 
 ## Tests
 
-The `tests` directory contains multiple layers of testing.
+The `tests` folder contains multiple layers of testing.
 
 ### Selector tests against live sites (`tests/test-live-sites.ts`)
 
