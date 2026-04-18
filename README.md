@@ -38,65 +38,115 @@ You don't need a GDPR consent banner for using Do11y.
 
 ## Quickstart
 
-### Option 1: CDN (recommended)
+### Mintlify
 
-Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
+1. Copy `do11y.min.js` and `do11y-config.example.js` to the same folder (for example, `scripts/`). Alphabetical ordering ensures the config loads first.
+1. Rename `do11y-config.example.js` to `do11y-config.js`.
+1. In `do11y-config.js`, replace the placeholder values with your Axiom credentials.
+
+    ```js
+    window.Do11yConfig = {
+    axiomHost: 'AXIOM_DOMAIN',
+    axiomToken: 'API_TOKEN',
+    axiomDataset: 'DATASET_NAME',
+    framework: 'mintlify',
+    };
+    ```
+
+1. Optional: Set up the [automatic sync to your docs repo](#automatic-sync-to-your-docs-repo) to keep your copy of `do11y.min.js` up to date.
+
+### Docusaurus
+
+Add the following to `docusaurus.config.js`:
+
+```js
+module.exports = {
+  headTags: [
+    { tagName: 'meta', attributes: { name: 'axiom-do11y-domain', content: 'AXIOM_DOMAIN' } },
+    { tagName: 'meta', attributes: { name: 'axiom-do11y-token', content: 'API_TOKEN' } },
+    { tagName: 'meta', attributes: { name: 'axiom-do11y-dataset', content: 'DATASET_NAME' } },
+    { tagName: 'meta', attributes: { name: 'axiom-do11y-framework', content: 'docusaurus' } },
+  ],
+  scripts: [{ src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js', defer: true }],
+};
+```
+
+### Nextra
+
+Add the following to `pages/_app.jsx` (or `_app.tsx`):
+
+```jsx
+import Head from 'next/head';
+
+export default function App({ Component, pageProps }) {
+  return (
+    <>
+      <Head>
+        <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN" />
+        <meta name="axiom-do11y-token" content="API_TOKEN" />
+        <meta name="axiom-do11y-dataset" content="DATASET_NAME" />
+        <meta name="axiom-do11y-framework" content="nextra" />
+        <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
+      </Head>
+      <Component {...pageProps} />
+    </>
+  );
+}
+```
+
+### VitePress
+
+Add the following to `.vitepress/config.js` (or `.vitepress/config.ts`):
+
+```js
+export default {
+  head: [
+    ['meta', { name: 'axiom-do11y-domain', content: 'AXIOM_DOMAIN' }],
+    ['meta', { name: 'axiom-do11y-token', content: 'API_TOKEN' }],
+    ['meta', { name: 'axiom-do11y-dataset', content: 'DATASET_NAME' }],
+    ['meta', { name: 'axiom-do11y-framework', content: 'vitepress' }],
+    ['script', { src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js' }],
+  ],
+};
+```
+
+### MkDocs Material
+
+Add the following to `mkdocs.yml`:
+
+```yaml
+theme:
+  name: material
+  custom_dir: overrides
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js
+```
+
+Create `overrides/main.html` to inject the meta tags:
+
+```html
+{% extends "base.html" %}
+{% block extrahead %}
+  <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
+  <meta name="axiom-do11y-token" content="API_TOKEN">
+  <meta name="axiom-do11y-dataset" content="DATASET_NAME">
+  <meta name="axiom-do11y-framework" content="mkdocs-material">
+{% endblock %}
+```
+
+See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) for details on custom theme overrides.
+
+### GitBook
+
+In your GitBook workspace, go to **Customization** and add the following to the custom HTML head field:
 
 ```html
 <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
 <meta name="axiom-do11y-token" content="API_TOKEN">
 <meta name="axiom-do11y-dataset" content="DATASET_NAME">
-<meta name="axiom-do11y-framework" content="FRAMEWORK">
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+<meta name="axiom-do11y-framework" content="gitbook">
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer></script>
 ```
-
-Replace the meta tag values with your Axiom credentials and docs framework. To pin a specific version, replace `@1.0.0` with the desired version tag.
-
-#### Advanced configuration via CDN
-
-Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) such as scroll thresholds, tracking toggles, or custom selectors, set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
-
-```html
-<script>
-window.Do11yConfig = {
-  axiomHost: 'us-east-1.aws.edge.axiom.co',
-  axiomToken: 'xaat-your-ingest-token',
-  axiomDataset: 'do11y',
-  framework: 'vitepress',
-  scrollThresholds: [25, 50, 75, 100],
-  trackFeedback: false,
-  sectionVisibleThreshold: 5,
-  // Any option from the Configuration table below can be set here
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
-```
-
-When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
-
-### Option 2: Self-host
-
-If you can't use a CDN, self-host the script.
-
-The repo doesn't include the built bundles (`do11y.js`, `do11y.min.js`). Obtain them from a [GitHub release](https://github.com/axiomhq/do11y/releases) or from the npm package. The config template is versioned in the repo under `examples/` and ships with the package.
-
-```bash
-npm install @axiomhq/do11y
-# Bundles: node_modules/@axiomhq/do11y/dist/do11y.js (and do11y.min.js)
-# Config template: node_modules/@axiomhq/do11y/examples/do11y-config.example.js
-```
-
-1. Copy `do11y.js` (or `do11y.min.js`) and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
-1. Add both scripts to every page, with the config file loading first:
-
-```html
-<script src="/path/to/do11y-config.js"></script>
-<script src="/path/to/do11y.js"></script>
-```
-
-For frameworks like Mintlify that auto-include all `.js` files in the content directory, place both files in the same directory. Alphabetical ordering ensures the config loads first.
-
-Don't edit `do11y.js` directly. It's a build artifact and updating to a new release overwrites it.
 
 ## Query data
 
@@ -153,17 +203,89 @@ The selectors work on sites using the standard themes of each supported framewor
 
 CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
-## Automatic sync to your docs repo
+## Setup for unsupported frameworks
 
-If you self-host `do11y.js` in GitHub repo, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically.
+### Option 1: CDN (recommended)
+
+Add the script to every page of your docs site. The simplest setup uses meta tags for the required settings:
+
+```html
+<meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
+<meta name="axiom-do11y-token" content="API_TOKEN">
+<meta name="axiom-do11y-dataset" content="DATASET_NAME">
+<meta name="axiom-do11y-framework" content="FRAMEWORK">
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js"></script>
+```
+
+Replace the meta tag values with your Axiom credentials and docs framework. To pin a specific version, replace `latest` with a version tag like `1.0.0`.
+
+#### Advanced configuration via CDN
+
+Meta tags only cover the essential settings. To configure any of the [advanced options](#configuration) such as scroll thresholds, tracking toggles, or custom selectors, set `window.Do11yConfig` in an inline script placed **before** the CDN script tag:
+
+```html
+<script>
+window.Do11yConfig = {
+  axiomHost: 'us-east-1.aws.edge.axiom.co',
+  axiomToken: 'xaat-your-ingest-token',
+  axiomDataset: 'do11y',
+  framework: 'vitepress',
+  scrollThresholds: [25, 50, 75, 100],
+  trackFeedback: false,
+  sectionVisibleThreshold: 5,
+  // Any option from the Configuration table below can be set here
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+```
+
+When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
+
+### Option 2: Self-host
+
+If you can't use a CDN, self-host the script.
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/axiomhq/do11y.git
+    cd do11y
+    ```
+1. Copy `dist/do11y.min.js` and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. In `do11y-config.js`, replace the placeholder values with your Axiom credentials.
+
+    ```js
+    window.Do11yConfig = {
+    axiomHost: 'AXIOM_DOMAIN',
+    axiomToken: 'API_TOKEN',
+    axiomDataset: 'DATASET_NAME',
+    framework: 'FRAMEWORK',
+    };
+    ```
+
+1. Add both scripts to every page, with the config file loading first:
+
+    ```html
+    <script src="/path/to/do11y-config.js"></script>
+    <script src="/path/to/do11y.min.js"></script>
+    ```
+
+Don't edit `do11y.min.js` directly. It's a build artifact and updating to a new release overwrites it.
+
+#### Automatic sync to your docs repo
+
+If you self-host `do11y.min.js` in GitHub repo, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically.
 
 1. Copy `.github/workflows/sync-do11y-to-docs.yml` to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
+1. Create an empty file at `do11y.version`. This file is used to track the version of `do11y.min.js`.
 1. Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
 
     | Variable | Example | Description |
     |---|---|---|
-    | `DO11Y_JS_PATH` | `scripts/do11y.js` | Path to `do11y.js` in your docs repo. |
-    | `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. Create this file with the current version tag (e.g. `v1.0.0`) to avoid triggering a PR on the first run. |
+    | `DO11Y_JS_PATH` | `scripts/do11y.min.js` | Path to `do11y.min.js` in your docs repo. |
+    | `DO11Y_VER_PATH` | `scripts/do11y.version` | Path to a version tracking file in your docs repo. |
+
+1. Ensure the GitHub Action has permission to push to your docs repo. Go to **Settings > Actions > General > Workflow permissions**, and turn on **Allow GitHub Actions to create and approve pull requests**.
 
 You don't need to add any secrets.
 
