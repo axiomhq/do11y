@@ -54,7 +54,6 @@ interface Framework {
   startArgs?: string[];
   readyPattern?: RegExp;
   buildCmd?: string;
-  injectDo11y?: boolean;
   scaffoldFn?: () => void;
   startPage: string;
   guidePage: string;
@@ -95,17 +94,6 @@ const FRAMEWORKS: Record<string, Framework> = {
     readyPattern: /Ready in|localhost:4005|started/i,
     startPage: '/introduction',
     guidePage: '/guide',
-  },
-  gitbook: {
-    port: 4006,
-    type: 'static',
-    dir: path.join(SITES_DIR, 'gitbook'),
-    staticDir: path.join(SITES_DIR, 'gitbook', '_book'),
-    do11yDest: path.join(SITES_DIR, 'gitbook', '_book', 'do11y.js'),
-    buildCmd: 'npx honkit build',
-    injectDo11y: true,
-    startPage: '/',
-    guidePage: '/guide.html',
   },
   docusaurus: {
     port: 4001,
@@ -222,25 +210,6 @@ function patchDo11y(destPath: string, framework: string, testRunId: string): voi
   const dir = path.dirname(destPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(destPath, configBlock + interceptBlock + src);
-}
-
-function injectDo11yTags(dir: string): void {
-  const entries = fs.readdirSync(dir, { recursive: true });
-  for (const entry of entries) {
-    const rel = String(entry);
-    if (!rel.endsWith('.html')) continue;
-    const filePath = path.join(dir, rel);
-    let html = fs.readFileSync(filePath, 'utf8');
-    if (html.includes('do11y.js')) continue;
-    const tags = [
-      '<meta name="axiom-do11y-framework" content="gitbook">',
-      '<meta name="axiom-do11y-debug" content="true">',
-      '<meta name="axiom-do11y-domains" content="localhost">',
-      '<script src="/do11y.js" defer></script>',
-    ].join('\n    ');
-    html = html.replace('</head>', `    ${tags}\n</head>`);
-    fs.writeFileSync(filePath, html);
-  }
 }
 
 function waitForServer(port: number, timeoutMs = 180000): Promise<void> {
@@ -521,7 +490,7 @@ async function autoScroll(page: Page): Promise<void> {
       const distance = 200;
       const delay = 80;
 
-      // Some frameworks (GitBook/HonKit) use container-based scrolling.
+      // Some frameworks use container-based scrolling.
       // Find the scrollable container so we scroll it instead of the window.
       let container: Element | null = null;
       const contentEl = document.querySelector('[role="main"], main, article');
@@ -643,15 +612,13 @@ async function queryAxiom(testRunId: string, startTime: Date): Promise<AxiomEven
 const EXPECTED_EVENTS: Record<string, EventExpectation> = {
   page_view: { min: 2 },
   scroll_depth: { min: 1 },
-  search_opened: { min: 0 },        // best-effort — no search in GitBook static
-  code_copied: { min: 0 },          // best-effort — no identifiable copy button in GitBook
+  search_opened: { min: 0 },        // best-effort — not all frameworks have a search element
+  code_copied: { min: 1 },
   link_click: { min: 1 },
   page_exit: { min: 1 },
-  expand_collapse: { min: 0 },      // best-effort — requires <details> in DOM
-  toc_click: { min: 0 },            // best-effort — GitBook static has no on-page TOC;
-                                    // VitePress has one but synthetic clicks can't reliably
-                                    // fire do11y's listener due to Vue's reactive re-rendering
-  feedback: { min: 0 },             // best-effort — only GitBook has a native feedback widget
+  expand_collapse: { min: 1 },
+  toc_click: { min: 1 },
+  feedback: { min: 0 },             // best-effort — requires a feedback widget in DOM
   section_visible: { min: 1 },      // sectionVisibleThreshold: 1 + 2s sleep guarantees this
 };
 
@@ -756,12 +723,6 @@ function validateEvents(
     // 1b. Patch and deploy do11y.js
     log('  Patching do11y.js…');
     patchDo11y(fw.do11yDest, name, testRunId);
-
-    // 1c. Inject do11y meta/script tags into pre-built HTML
-    if (fw.injectDo11y && fw.staticDir) {
-      log('  Injecting do11y tags into HTML…');
-      injectDo11yTags(fw.staticDir);
-    }
 
     // 2. Start server
     let server: http.Server | undefined;
