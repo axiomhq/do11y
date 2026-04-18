@@ -58,57 +58,44 @@ You don't need a GDPR consent banner for using Do11y.
 
 ### Docusaurus
 
-Add the following to `docusaurus.config.js`:
+Add the following to the `headTags` and `scripts` fields in `docusaurus.config.js` if you use JavaScript, or `docusaurus.config.ts` if you use TypeScript:
 
 ```js
-module.exports = {
-  headTags: [
+headTags: [
     { tagName: 'meta', attributes: { name: 'axiom-do11y-domain', content: 'AXIOM_DOMAIN' } },
     { tagName: 'meta', attributes: { name: 'axiom-do11y-token', content: 'API_TOKEN' } },
     { tagName: 'meta', attributes: { name: 'axiom-do11y-dataset', content: 'DATASET_NAME' } },
     { tagName: 'meta', attributes: { name: 'axiom-do11y-framework', content: 'docusaurus' } },
-  ],
-  scripts: [{ src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js', defer: true }],
-};
+],
+scripts: [{ src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js', defer: true }],
 ```
 
 ### Nextra
 
-Add the following to `pages/_app.jsx` (or `_app.tsx`):
+Add the following to the `<Head>` component in `pages/_app.jsx` (or `_app.tsx`) if you use the Pages Router, or `app/layout.jsx` (or `app/layout.tsx`) if you use the App Router:
 
 ```jsx
-import Head from 'next/head';
-
-export default function App({ Component, pageProps }) {
-  return (
-    <>
-      <Head>
-        <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN" />
-        <meta name="axiom-do11y-token" content="API_TOKEN" />
-        <meta name="axiom-do11y-dataset" content="DATASET_NAME" />
-        <meta name="axiom-do11y-framework" content="nextra" />
-        <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
-      </Head>
-      <Component {...pageProps} />
-    </>
-  );
-}
+<Head>
+    <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN" />
+    <meta name="axiom-do11y-token" content="API_TOKEN" />
+    <meta name="axiom-do11y-dataset" content="DATASET_NAME" />
+    <meta name="axiom-do11y-framework" content="nextra" />
+    <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
+</Head>
 ```
 
 ### VitePress
 
-Add the following to `.vitepress/config.js` (or `.vitepress/config.ts`):
+Add the following to the `head` field in `.vitepress/config.js` (or `.vitepress/config.ts`):
 
 ```js
-export default {
-  head: [
+head: [
     ['meta', { name: 'axiom-do11y-domain', content: 'AXIOM_DOMAIN' }],
     ['meta', { name: 'axiom-do11y-token', content: 'API_TOKEN' }],
     ['meta', { name: 'axiom-do11y-dataset', content: 'DATASET_NAME' }],
     ['meta', { name: 'axiom-do11y-framework', content: 'vitepress' }],
     ['script', { src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js' }],
-  ],
-};
+],
 ```
 
 ### MkDocs Material
@@ -136,18 +123,6 @@ Create `overrides/main.html` to inject the meta tags:
 ```
 
 See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) for details on custom theme overrides.
-
-### GitBook
-
-In your GitBook workspace, go to **Customization** and add the following to the custom HTML head field:
-
-```html
-<meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
-<meta name="axiom-do11y-token" content="API_TOKEN">
-<meta name="axiom-do11y-dataset" content="DATASET_NAME">
-<meta name="axiom-do11y-framework" content="gitbook">
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer></script>
-```
 
 ## Query data
 
@@ -189,12 +164,6 @@ This detection is referrer-based: it checks whether the `document.referrer` host
 See [QUERIES.md](QUERIES.md) for APL queries to analyze AI traffic, including per-platform breakdowns, trends, and engagement comparisons.
 
 ## Known limitations
-
-### Copy-button detection on GitBook
-
-The `copyButtonSelector` doesn't match copy buttons on GitBook sites. GitBook renders copy buttons with generic Tailwind CSS utility classes and no semantic attributes (`class`, `aria-label`, `title`, and `data-testid` all lack any "copy" identifier). There is no CSS selector that can reliably target these buttons without also matching unrelated elements.
-
-**Workaround:** If you use GitBook and need copy-button tracking, set `framework: 'custom'` and provide a selector specific to your site's DOM, or listen for clipboard events directly.
 
 ### Custom themes
 
@@ -332,7 +301,6 @@ Set `framework` to auto-configure CSS selectors for your docs platform:
 | `'mintlify'` | [Mintlify](https://mintlify.com) (default) |
 | `'docusaurus'` | [Docusaurus](https://docusaurus.io) |
 | `'nextra'` | [Nextra](https://nextra.site) |
-| `'gitbook'` | [GitBook](https://gitbook.com) |
 | `'mkdocs-material'` | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) |
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
 | `'custom'` | Provide your own selectors (see below) |
@@ -413,7 +381,6 @@ The test covers the following sites:
 | Mintlify | https://axiom.co/docs/query-data/explore |
 | Docusaurus | https://docusaurus.io/docs/configuration |
 | Nextra | https://nextra.site/docs/getting-started |
-| GitBook | https://docs.gitbook.com/content-creation/blocks/code-block |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
 
@@ -469,7 +436,6 @@ The test covers the following frameworks:
 | Name | Type | Port | Notes |
 |---|---|---|---|
 | `mintlify` | npm (Mintlify CLI) | 4005 | Full framework install |
-| `gitbook` | npm (HonKit) + static serve | 4006 | Built with HonKit (GitBook OSS fork), served as static HTML |
 | `docusaurus` | npm (Docusaurus 3) | 4001 | Full framework install |
 | `nextra` | npm (Next.js + Nextra 3) | 4002 | Full framework install |
 | `vitepress` | npm (VitePress 1.x) | 4003 | Full framework install |
@@ -483,11 +449,11 @@ The test validates the following events per framework:
 | `scroll_depth` | 1 | |
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
-| `expand_collapse` | 0 | Best-effort, requires `<details>` in DOM |
-| `toc_click` | 0 | Best-effort. GitBook static has no on-page TOC. The automated test cannot synthesise a VitePress TOC click (Vue's reactive rendering replaces the link node before the synthetic event fires) |
-| `search_opened` | 0 | Best-effort. No search button in GitBook static build |
-| `code_copied` | 0 | Best-effort. GitBook exposes no identifiable copy button selectors |
-| `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
+| `expand_collapse` | 1 | |
+| `toc_click` | 1 | |
+| `search_opened` | 0 | |
+| `code_copied` | 1 | |
+| `feedback` | 0 | |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ## Create release
