@@ -459,6 +459,7 @@ The test validates the following events per framework:
 ## Create release
 
 1. Run all [tests](#tests).
+1. Bump the version in `package.json` and `src/do11y.ts`.
 1. Run the following commands to build the package and run the tests:
 
     ```bash
@@ -467,7 +468,7 @@ The test validates the following events per framework:
     npm run lint
     ```
 
-1. Bump the version in `package.json` and `src/do11y.ts`.
+1. Commit the changes and push to the `main` branch.
 1. Tag and release via the GitHub CLI:
 
     ```bash
