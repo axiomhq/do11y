@@ -16,5 +16,4 @@ Thumbs.db
 build/
 .next/
 .docusaurus/
-.vitepress/
-_book/
+tests/sites/vitepress/.vitepress/cache
