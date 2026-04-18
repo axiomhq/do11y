@@ -490,9 +490,7 @@ The test validates the following events per framework:
 | `feedback` | 0 | Best-effort. Only GitBook has a native feedback widget |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
-## Development
-
-### Create release
+## Create release
 
 1. Run all [tests](#tests).
 1. Run the following commands to build the package and run the tests:
@@ -521,46 +519,6 @@ The test validates the following events per framework:
     npm publish --access public
     npm logout
     ```
-
-### Repository layout
-
-```
-do11y/
-├── src/
-│   └── do11y.ts          ← TypeScript source
-├── examples/
-│   └── do11y-config.example.js  ← self-host config template
-├── dist/                  ← built output
-│   ├── do11y.js
-│   └── do11y.min.js
-├── package.json
-├── tsconfig.json
-├── rolldown.config.ts
-├── .oxlintrc.json
-└── .github/workflows/
-    ├── publish.yml        ← npm publish on release
-    └── sync-do11y-to-docs.yml   ← weekly update workflow (copy to your docs repo)
-```
-
-### Toolchain
-
-| Tool | Purpose |
-|---|---|
-| [TypeScript](https://www.typescriptlang.org) | Type checking (`npm run check`) |
-| [rolldown](https://rolldown.rs) | Bundling to IIFE (`npm run build`) |
-| [oxlint](https://oxc.rs/docs/guide/usage/linter) | Linting (`npm run lint`) |
-| [oxfmt](https://oxc.rs/docs/guide/usage/formatter) | Formatting (`npm run format`) |
-
-### Local setup
-
-```bash
-npm install
-npm run build   # outputs dist/do11y.js and dist/do11y.min.js (see examples/ for config template)
-npm run check   # TypeScript type checking
-npm run lint    # oxlint
-```
-
-All source changes go in `src/do11y.ts`. The build produces the `dist/` directory. The self-host config template lives in `examples/do11y-config.example.js` and ships with the package.
 
 ## License
 
