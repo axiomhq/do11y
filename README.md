@@ -40,7 +40,8 @@ You don't need a GDPR consent banner for using Do11y.
 
 ### Mintlify
 
-1. Copy `do11y.min.js` and `do11y-config.example.js` to the same folder (for example, `scripts/`). Alphabetical ordering ensures the config loads first.
+1. Download the latest release from [GitHub](https://github.com/axiomhq/do11y/releases/latest) and extract the `do11y-<version>.zip` file.
+1. Copy `dist/do11y.min.js` and `examples/do11y-config.example.js` to the same folder in your documentation project (for example, `scripts/`). Alphabetical ordering ensures the config loads first.
 1. Rename `do11y-config.example.js` to `do11y-config.js`.
 1. In `do11y-config.js`, replace the placeholder values with your Axiom credentials.
 
@@ -245,13 +246,9 @@ When both are present, meta tags take precedence over `window.Do11yConfig`, whic
 
 If you can't use a CDN, self-host the script.
 
-1. Clone the repository:
-
-    ```bash
-    git clone https://github.com/axiomhq/do11y.git
-    cd do11y
-    ```
-1. Copy `dist/do11y.min.js` and `examples/do11y-config.example.js` to your documentation site. Rename the config file to `do11y-config.js` and fill in your Axiom credentials.
+1. Download the latest release from [GitHub](https://github.com/axiomhq/do11y/releases/latest) and extract the `do11y-<version>.zip` file.
+1. Copy `dist/do11y.min.js` and `examples/do11y-config.example.js` to your documentation project (for example, `scripts/`).
+1. Rename `do11y-config.example.js` to `do11y-config.js`.
 1. In `do11y-config.js`, replace the placeholder values with your Axiom credentials.
 
     ```js
@@ -269,6 +266,8 @@ If you can't use a CDN, self-host the script.
     <script src="/path/to/do11y-config.js"></script>
     <script src="/path/to/do11y.min.js"></script>
     ```
+
+1. Optional: Set up the [automatic sync to your docs repo](#automatic-sync-to-your-docs-repo) to keep your copy of `do11y.min.js` up to date.
 
 Don't edit `do11y.min.js` directly. It's a build artifact and updating to a new release overwrites it.
 
@@ -530,8 +529,8 @@ do11y/
 ├── src/
 │   └── do11y.ts          ← TypeScript source
 ├── examples/
-│   └── do11y-config.example.js  ← self-host config template (tracked in git)
-├── dist/                  ← built output (git-ignored)
+│   └── do11y-config.example.js  ← self-host config template
+├── dist/                  ← built output
 │   ├── do11y.js
 │   └── do11y.min.js
 ├── package.json
@@ -561,7 +560,7 @@ npm run check   # TypeScript type checking
 npm run lint    # oxlint
 ```
 
-All source changes go in `src/do11y.ts`. The build produces the `dist/` directory, which git ignores. The self-host config template lives in `examples/do11y-config.example.js` and ships with the package.
+All source changes go in `src/do11y.ts`. The build produces the `dist/` directory. The self-host config template lives in `examples/do11y-config.example.js` and ships with the package.
 
 ## License
 
