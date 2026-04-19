@@ -30,6 +30,18 @@ Do11y collects anonymous usage data:
 
 You don't need a GDPR consent banner for using Do11y.
 
+## Supported frameworks
+
+Do11y supports the latest versions of the following frameworks:
+
+- Mintlify
+- Docusaurus
+- Nextra
+- MkDocs Material
+- VitePress
+
+For other frameworks, use [manual setup](#manual-setup).
+
 ## Prerequisites
 
 1. [Create an Axiom account](https://app.axiom.co/register).
@@ -173,7 +185,7 @@ The selectors work on sites using the standard themes of each supported framewor
 
 CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
-## Setup for unsupported frameworks
+## Manual setup
 
 ### Option 1: CDN (recommended)
 
