@@ -33,7 +33,7 @@ export default async function RootLayout({ children }) {
         <meta name="axiom-do11y-token" content="xaat-8c763b42-88a2-4474-a776-8f534d9fd82b" />
         <meta name="axiom-do11y-dataset" content="mano-do11y-test" />
         <meta name="axiom-do11y-framework" content="nextra" />
-        <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
+        <script src="/do11y.js" defer />
       </Head>
       <body>
         <Layout
