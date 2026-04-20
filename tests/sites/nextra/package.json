@@ -1,14 +1,14 @@
 {
-  "name": "do11y-test-nextra",
-  "private": true,
-  "scripts": {
-    "start": "next dev -p 4002"
-  },
   "dependencies": {
-    "next": "^15.5.15",
-    "nextra": "^3.2.0",
-    "nextra-theme-docs": "^3.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "next": "^16.2.4",
+    "nextra": "^4.6.1",
+    "nextra-theme-docs": "^4.6.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "scripts": {
+    "dev": "next dev -p 4002",
+    "build": "next build",
+    "start": "next dev -p 4002"
   }
 }
