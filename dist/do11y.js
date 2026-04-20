@@ -1,6 +1,6 @@
 (function() {
 	//#region src/do11y.ts
-	const VERSION = "0.0.4";
+	const VERSION = "0.0.5";
 	const _alreadyLoaded = !!window.__axiomDo11yInitialized;
 	window.__axiomDo11yInitialized = true;
 	const config = {
