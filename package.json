@@ -1,8 +1,13 @@
 {
   "name": "@axiomhq/do11y",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Documentation observability for Axiom",
   "type": "module",
+  "main": "./dist/do11y.min.js",
+  "exports": {
+    ".": "./dist/do11y.min.js",
+    "./min": "./dist/do11y.min.js"
+  },
   "files": [
     "dist",
     "examples"
