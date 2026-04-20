@@ -53,14 +53,6 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
   },
-  gitbook: {
-    searchSelector: '[data-testid*="search"], button[aria-label*="search" i]',
-    copyButtonSelector: '[class*="copy"], button[aria-label*="copy" i]',
-    codeBlockSelector: 'pre, code, [class*="code"]',
-    navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
-    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
-    contentSelector: 'main, article, [role="main"], [class*="content"]',
-  },
   'mkdocs-material': {
     searchSelector: '.md-search__input',
     copyButtonSelector: '.md-clipboard, .md-code__button[title="Copy to clipboard"]',
@@ -85,7 +77,6 @@ const TEST_SITES: Record<string, string> = {
   mintlify:          'https://axiom.co/docs/query-data/explore',
   docusaurus:        'https://docusaurus.io/docs/configuration',
   nextra:            'https://nextra.site/docs/docs-theme/start',
-  gitbook:           'https://docs.gitbook.com/content-creation/blocks/code-block',
   'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/getting-started/',
   vitepress:         'https://vitepress.dev/guide/getting-started',
 };
