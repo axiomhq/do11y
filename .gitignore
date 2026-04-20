@@ -13,9 +13,7 @@ Thumbs.db
 .env.production.local
 
 # Build output
-dist/
 build/
 .next/
 .docusaurus/
-.vitepress/
-_book/
+tests/sites/vitepress/.vitepress/cache
