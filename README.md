@@ -254,9 +254,9 @@ Don't edit `do11y.min.js` directly. It's a build artifact and updating to a new 
 
 #### Automatic sync to your docs repo
 
-If you self-host `do11y.min.js` in GitHub repo, the included GitHub Action (`.github/workflows/sync-do11y-to-docs.yml`) keeps your copy up to date automatically.
+If you self-host `do11y.min.js` in GitHub repo, the included GitHub Action (`examples/sync-do11y-to-docs.yml`) keeps your copy up to date automatically.
 
-1. Copy `.github/workflows/sync-do11y-to-docs.yml` to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
+1. Copy `examples/sync-do11y-to-docs.yml` to `.github/workflows/` in your docs repo. It runs every Monday and opens a PR whenever a new do11y release is available.
 1. Create an empty file at `do11y.version`. This file is used to track the version of `do11y.min.js`.
 1. Add the following repository variables in your docs repo under **Settings > Secrets and variables > Actions > Variables > New repository variable**:
 
