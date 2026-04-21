@@ -9,6 +9,9 @@ interface FrameworkSelectors {
   navigationSelector: string;
   footerSelector: string;
   contentSelector: string;
+  tabContainerSelector: string;
+  tocSelector: string;
+  feedbackSelector: string;
 }
 
 interface SelectorResult {
@@ -36,6 +39,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], #navbar, #sidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '#table-of-contents, [data-testid="table-of-contents"], [class*="table-of-contents"], [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   docusaurus: {
     searchSelector: '.DocSearch, .DocSearch-Button',
@@ -44,6 +50,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .navbar, .sidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '.tabs[role="tablist"], [class*="tabs"]',
+    tocSelector: '.table-of-contents, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   nextra: {
     searchSelector: '.nextra-search input, input[placeholder*="search" i], button[aria-label*="search" i]',
@@ -52,6 +61,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '.nextra-toc, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   'mkdocs-material': {
     searchSelector: '.md-search__input',
@@ -60,6 +72,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .md-nav, .md-sidebar',
     footerSelector: 'footer, [role="contentinfo"], .md-footer',
     contentSelector: 'main, article, [role="main"], .md-content',
+    tabContainerSelector: '.tabbed-labels, .md-typeset .tabbed-set',
+    tocSelector: '.md-sidebar--secondary .md-nav, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   vitepress: {
     searchSelector: '.VPNavBarSearch button, .VPNavBarSearchButton, #local-search',
@@ -68,6 +83,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .VPNav, .VPSidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], .VPFooter, [class*="footer"]',
     contentSelector: 'main, article, [role="main"], .VPContent, [class*="content"]',
+    tabContainerSelector: '.vp-code-group .tabs, [role="tablist"]',
+    tocSelector: '.VPDocAsideOutline, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   document360: {
     searchSelector: '[class*="search-input"], [id*="search"], button[aria-label*="search" i], [class*="search-btn"]',
@@ -76,6 +94,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: '[class*="category-tree"], [class*="d360-left-nav"], nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: '.content_block_text, article, main, [role="main"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '[class*="article-toc"], [class*="toc"], [class*="table-of-contents"]',
+    feedbackSelector: '[class*="feedback"], [class*="was-article-helpful"], [class*="helpfulness"]',
   },
 };
 
@@ -97,6 +118,9 @@ const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [
   'navigationSelector',
   'footerSelector',
   'contentSelector',
+  'tabContainerSelector',
+  'tocSelector',
+  'feedbackSelector',
 ];
 
 // ─── Test runner ─────────────────────────────────────────────────────────────
