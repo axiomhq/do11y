@@ -143,14 +143,10 @@ See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/custo
 1. Add the following to the **Header** section:
 
     ```html
-    <script>
-    window.Do11yConfig = {
-      axiomHost: 'AXIOM_DOMAIN',
-      axiomToken: 'API_TOKEN',
-      axiomDataset: 'DATASET_NAME',
-      framework: 'document360',
-    };
-    </script>
+    <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
+    <meta name="axiom-do11y-token" content="API_TOKEN">
+    <meta name="axiom-do11y-dataset" content="DATASET_NAME">
+    <meta name="axiom-do11y-framework" content="document360">
     <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer></script>
     ```
 
@@ -238,7 +234,7 @@ window.Do11yConfig = {
   // Any option from the Configuration table below can be set here
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js"></script>
 ```
 
 When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
