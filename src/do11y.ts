@@ -43,6 +43,7 @@ export type FrameworkPreset =
   | 'gitbook'
   | 'mkdocs-material'
   | 'vitepress'
+  | 'document360'
   | 'custom';
 
 export interface FrameworkSelectors {
@@ -244,6 +245,17 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     tabContainerSelector: '.vp-code-group .tabs, [role="tablist"]',
     tocSelector: '.VPDocAsideOutline, [class*="toc"]',
     feedbackSelector: '[class*="feedback"], [class*="helpful"]',
+  },
+  document360: {
+    searchSelector: '[class*="search-input"], [id*="search"], button[aria-label*="search" i], [class*="search-btn"]',
+    copyButtonSelector: 'button[class*="copy"], button[aria-label*="copy" i]',
+    codeBlockSelector: 'pre, code, [class*="codeblock"]',
+    navigationSelector: '[class*="category-tree"], [class*="d360-left-nav"], nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
+    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+    contentSelector: '.content_block_text, article, main, [role="main"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '[class*="article-toc"], [class*="toc"], [class*="table-of-contents"]',
+    feedbackSelector: '[class*="feedback"], [class*="was-article-helpful"], [class*="helpfulness"]',
   },
 };
 

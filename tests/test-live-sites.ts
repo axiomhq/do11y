@@ -69,6 +69,14 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     footerSelector: 'footer, [role="contentinfo"], .VPFooter, [class*="footer"]',
     contentSelector: 'main, article, [role="main"], .VPContent, [class*="content"]',
   },
+  document360: {
+    searchSelector: '[class*="search-input"], [id*="search"], button[aria-label*="search" i], [class*="search-btn"]',
+    copyButtonSelector: 'button[class*="copy"], button[aria-label*="copy" i]',
+    codeBlockSelector: 'pre, code, [class*="codeblock"]',
+    navigationSelector: '[class*="category-tree"], [class*="d360-left-nav"], nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
+    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+    contentSelector: '.content_block_text, article, main, [role="main"]',
+  },
 };
 
 // Real documentation sites for each framework.
@@ -79,6 +87,7 @@ const TEST_SITES: Record<string, string> = {
   nextra:            'https://nextra.site/docs/docs-theme/start',
   'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/getting-started/',
   vitepress:         'https://vitepress.dev/guide/getting-started',
+  document360:       'https://docs.document360.com/docs/custom-css-javascript',
 };
 
 const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [

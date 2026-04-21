@@ -39,6 +39,7 @@ Do11y supports the latest versions of the following frameworks:
 - Nextra
 - MkDocs Material
 - VitePress
+- Document360
 
 For other frameworks, use [manual setup](#manual-setup).
 
@@ -135,6 +136,25 @@ Create `overrides/main.html` to inject the meta tags:
 ```
 
 See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) for details on custom theme overrides.
+
+### Document360
+
+1. In Document360, go to **Connections** > **Integrations** > **Custom HTML**.
+1. Add the following to the **Header** section:
+
+    ```html
+    <script>
+    window.Do11yConfig = {
+      axiomHost: 'AXIOM_DOMAIN',
+      axiomToken: 'API_TOKEN',
+      axiomDataset: 'DATASET_NAME',
+      framework: 'document360',
+    };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer></script>
+    ```
+
+1. Click **Save**.
 
 ## Query data
 
@@ -315,6 +335,7 @@ Set `framework` to auto-configure CSS selectors for your docs platform:
 | `'nextra'` | [Nextra](https://nextra.site) |
 | `'mkdocs-material'` | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) |
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
+| `'document360'` | [Document360](https://document360.com) |
 | `'custom'` | Provide your own selectors (see below) |
 
 When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. Optional: Set the framework via a meta tag:
@@ -395,6 +416,7 @@ The test covers the following sites:
 | Nextra | https://nextra.site/docs/getting-started |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
 | VitePress | https://vitepress.dev/guide/getting-started |
+| Document360 | https://docs.document360.com/docs/custom-css-javascript |
 
 ### Query validation (`tests/test-queries.ts`)
 
