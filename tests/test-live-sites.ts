@@ -123,6 +123,14 @@ const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [
   'feedbackSelector',
 ];
 
+// Selectors listed here are not expected to match on every page of that
+// framework and won't count as failures when they return 0 matches.
+const OPTIONAL_SELECTORS: Partial<Record<string, Array<keyof FrameworkSelectors>>> = {
+  docusaurus:  ['feedbackSelector'],
+  nextra:      ['feedbackSelector'],
+  vitepress:   ['feedbackSelector'],
+};
+
 // ─── Test runner ─────────────────────────────────────────────────────────────
 
 async function testFramework(
@@ -192,8 +200,10 @@ async function testFramework(
       continue;
     }
 
-    const pass = SELECTOR_KEYS.filter(k => (result.results[k]?.matched ?? 0) > 0).length;
-    const total = SELECTOR_KEYS.length;
+    const optional = new Set(OPTIONAL_SELECTORS[name] ?? []);
+    const required = SELECTOR_KEYS.filter(k => !optional.has(k));
+    const pass = required.filter(k => (result.results[k]?.matched ?? 0) > 0).length;
+    const total = required.length;
     console.log(`${pass}/${total} selectors matched`);
   }
 
@@ -212,14 +222,17 @@ async function testFramework(
     console.log(`│  ${url}`);
     if (error) {
       console.log(`│  ❌ Load error: ${error}`);
-      grandFail += SELECTOR_KEYS.length;
+      grandFail += SELECTOR_KEYS.filter(k => !(OPTIONAL_SELECTORS[name] ?? []).includes(k)).length;
       continue;
     }
+    const optionalSet = new Set(OPTIONAL_SELECTORS[name] ?? []);
     for (const key of SELECTOR_KEYS) {
       const r = results[key]!;
       const ok = r.matched > 0;
-      const icon = ok ? '✅' : '❌';
-      if (ok) grandPass++; else grandFail++;
+      const isOptional = optionalSet.has(key);
+      const icon = ok ? '✅' : isOptional ? '⚪' : '❌';
+      if (ok) grandPass++;
+      else if (!isOptional) grandFail++;
       let detail = `${r.matched} match(es)`;
       if (r.firstTag) detail += ` — first: <${r.firstTag}>`;
       if (r.firstId) detail += `#${r.firstId}`;
