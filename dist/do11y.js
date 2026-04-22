@@ -107,6 +107,17 @@
 			tabContainerSelector: ".vp-code-group .tabs, [role=\"tablist\"]",
 			tocSelector: ".VPDocAsideOutline, [class*=\"toc\"]",
 			feedbackSelector: "[class*=\"feedback\"], [class*=\"helpful\"]"
+		},
+		document360: {
+			searchSelector: "[class*=\"search-input\"], [id*=\"search\"], button[aria-label*=\"search\" i], [class*=\"search-btn\"]",
+			copyButtonSelector: "button[class*=\"copy\"], button[aria-label*=\"copy\" i]",
+			codeBlockSelector: "pre, code, [class*=\"codeblock\"]",
+			navigationSelector: "[class*=\"category-tree\"], [class*=\"d360-left-nav\"], nav, [role=\"navigation\"], [class*=\"nav\"], [class*=\"sidebar\"]",
+			footerSelector: "footer, [role=\"contentinfo\"], [class*=\"footer\"]",
+			contentSelector: ".content_block_text, article, main, [role=\"main\"]",
+			tabContainerSelector: "[role=\"tablist\"], [class*=\"tab\"]",
+			tocSelector: "[class*=\"article-toc\"], [class*=\"toc\"], [class*=\"table-of-contents\"]",
+			feedbackSelector: "[class*=\"feedback\"], [class*=\"was-article-helpful\"], [class*=\"helpfulness\"]"
 		}
 	};
 	const SELECTOR_KEYS = [
@@ -780,6 +791,10 @@
 		if (!config.trackSectionVisibility) return;
 		if (typeof IntersectionObserver === "undefined") return;
 		const threshold = config.sectionVisibleThreshold * 1e3;
+		window.addEventListener("articleload", () => {
+			sectionTimers = {};
+			observeHeadings();
+		});
 		sectionObserver = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
 				const id = entry.target.getAttribute("data-do11y-section-id");
@@ -890,12 +905,13 @@
 			if (!button.closest(validateSelector(config.feedbackSelector) ?? "[class*=\"feedback\"], [class*=\"helpful\"], [class*=\"rating\"], [class*=\"was-this\"], [data-feedback]")) return;
 			const buttonText = (button.textContent ?? "").trim().toLowerCase();
 			const ariaLabel = (button.getAttribute("aria-label") ?? "").toLowerCase();
-			const rawDataValue = button.getAttribute("data-value") ?? button.getAttribute("data-feedback");
+			const titleAttr = (button.getAttribute("title") ?? "").toLowerCase();
+			const rawDataValue = button.getAttribute("data-value") ?? button.getAttribute("data-md-value") ?? button.getAttribute("data-feedback");
 			const dataValue = rawDataValue && /^[\w\s.,!?-]{1,50}$/.test(rawDataValue) ? rawDataValue : null;
 			let rating = null;
 			if (dataValue) rating = dataValue;
-			else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + " " + ariaLabel)) rating = "yes";
-			else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + " " + ariaLabel)) rating = "no";
+			else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + " " + ariaLabel + " " + titleAttr)) rating = "yes";
+			else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + " " + ariaLabel + " " + titleAttr)) rating = "no";
 			if (!rating) return;
 			queueEvent("feedback", { rating });
 		});
@@ -925,6 +941,7 @@
 		});
 	}
 	let mutationObserver = null;
+	let _spaNavigationHandler = null;
 	function init() {
 		if (window.Do11yConfig && typeof window.Do11yConfig === "object") {
 			for (const key in window.Do11yConfig) if (Object.prototype.hasOwnProperty.call(window.Do11yConfig, key) && Object.prototype.hasOwnProperty.call(config, key)) config[key] = window.Do11yConfig[key];
@@ -974,7 +991,7 @@
 		setupFeedbackTracking();
 		setupExpandCollapseTracking();
 		let lastPath = window.location.pathname;
-		mutationObserver = new MutationObserver(() => {
+		function handleSpaNavigation() {
 			if (window.location.pathname !== lastPath) {
 				lastPath = window.location.pathname;
 				emitPageExit();
@@ -987,25 +1004,14 @@
 				observeHeadings();
 				checkScrollDepth();
 			}
-		});
+		}
+		_spaNavigationHandler = handleSpaNavigation;
+		mutationObserver = new MutationObserver(handleSpaNavigation);
 		mutationObserver.observe(document.body, {
 			childList: true,
 			subtree: true
 		});
-		window.addEventListener("popstate", () => {
-			if (window.location.pathname !== lastPath) {
-				lastPath = window.location.pathname;
-				emitPageExit();
-				trackedScrollDepths = /* @__PURE__ */ new Set();
-				pageLoadTime = Date.now();
-				lastActivityTime = Date.now();
-				totalActiveTime = 0;
-				isPageVisible = true;
-				trackPageView();
-				observeHeadings();
-				checkScrollDepth();
-			}
-		});
+		window.addEventListener("popstate", handleSpaNavigation);
 		Object.freeze(config);
 		if (config.debug) console.log("[Axiom Do11y] Initialized successfully");
 	}
@@ -1025,8 +1031,15 @@
 		}
 		flushSync();
 	}
-	if (!_alreadyLoaded) if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-	else init();
+	if (!_alreadyLoaded) {
+		const _origPushState = history.pushState.bind(history);
+		history.pushState = (...args) => {
+			_origPushState(...args);
+			_spaNavigationHandler?.();
+		};
+		if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+		else init();
+	}
 	window.AxiomDo11y = window.AxiomDo11y ?? {
 		getConfig: () => ({
 			endpoint: config.axiomHost,

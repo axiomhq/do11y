@@ -39,6 +39,7 @@ Do11y supports the latest versions of the following frameworks:
 - Nextra
 - MkDocs Material
 - VitePress
+- Document360
 
 For other frameworks, use [manual setup](#manual-setup).
 
@@ -136,6 +137,21 @@ Create `overrides/main.html` to inject the meta tags:
 
 See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) for details on custom theme overrides.
 
+### Document360
+
+1. In Document360, go to **Connections** > **Integrations** > **Custom HTML**.
+1. Add the following to the **Header** section:
+
+    ```html
+    <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN">
+    <meta name="axiom-do11y-token" content="API_TOKEN">
+    <meta name="axiom-do11y-dataset" content="DATASET_NAME">
+    <meta name="axiom-do11y-framework" content="document360">
+    <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer></script>
+    ```
+
+1. Click **Save**.
+
 ## Query data
 
 Once you've installed Do11y and information about your documentation usage is flowing into Axiom, you can query the data in Axiom. See [QUERIES.md](QUERIES.md) for exampleAPL queries to analyze your documentation, including:
@@ -218,7 +234,7 @@ window.Do11yConfig = {
   // Any option from the Configuration table below can be set here
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js"></script>
 ```
 
 When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
@@ -315,6 +331,7 @@ Set `framework` to auto-configure CSS selectors for your docs platform:
 | `'nextra'` | [Nextra](https://nextra.site) |
 | `'mkdocs-material'` | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) |
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
+| `'document360'` | [Document360](https://document360.com) |
 | `'custom'` | Provide your own selectors (see below) |
 
 When `framework` is set to a supported value, the script automatically uses the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas. Optional: Set the framework via a meta tag:
@@ -373,7 +390,20 @@ Do11y doesn't expose `cleanup()` and `debug()` on the global object. Exposing `c
 
 ## Tests
 
-The `tests` folder contains multiple layers of testing.
+The `tests` folder contains three complementary test layers. Each catches a different class of failure:
+
+| What broke | Which test catches it |
+|---|---|
+| Framework updated a CSS class name (selector drift) | `test-live-sites.ts` |
+| do11y broken on a specific framework's local dev server | `test-integrations.ts` |
+| Events not reaching Axiom from a real production site | `test-live-e2e.ts` |
+| Hosted platform (e.g. Document360) selector changed | `test-live-sites.ts` + `test-live-e2e.ts` |
+
+**`test-live-sites.ts`** checks that CSS selectors match real DOM elements in production. It requires no Axiom credentials and no event ingestion — its only job is to catch selector drift when a framework ships a DOM update that renames class names.
+
+**`test-integrations.ts`** runs against local scaffolded sites where the page content is fully under your control. Every interaction is guaranteed to fire: the guide page includes a `<details>` block, a TOC, a code block with a copy button, and a feedback widget. This is why it can assert hard minimums (`code_copied: 1`, `expand_collapse: 1`, `toc_click: 1`) that the live E2E test cannot. It also validates that do11y works correctly with each framework's dev server, SPA routing model, and build toolchain in a hermetic environment.
+
+**`test-live-e2e.ts`** is the only test that proves events reach Axiom from a real site. It covers hosted platforms like Document360 that have no local equivalent, and catches issues that only surface in production: CDN caching, CSP headers, third-party script interference, or a site's own JavaScript conflicting with do11y.
 
 ### Selector tests against live sites (`tests/test-live-sites.ts`)
 
@@ -390,11 +420,76 @@ The test covers the following sites:
 
 | Framework | URL |
 |---|---|
-| Mintlify | https://axiom.co/docs/query-data/explore |
-| Docusaurus | https://docusaurus.io/docs/configuration |
-| Nextra | https://nextra.site/docs/getting-started |
-| MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
+| Mintlify | https://www.mintlify.com/docs/components/expandables |
+| Docusaurus | https://docusaurus.io/docs/next/markdown-features |
+| Nextra | https://nextra.site/docs/docs-theme/start |
+| MkDocs Material | https://squidfunk.github.io/mkdocs-material/reference/admonitions |
 | VitePress | https://vitepress.dev/guide/getting-started |
+| Document360 | https://docs.document360.com/docs/custom-css-javascript |
+
+### Live E2E tests (`tests/test-live-e2e.ts`)
+
+End-to-end tests against real hosted documentation sites. Puppeteer injects `do11y.js` and `Do11yConfig` via `evaluateOnNewDocument` — no local server required — then drives user interactions and queries the Axiom API to verify that events were ingested. Covers all frameworks from the selector tests, including hosted platforms like Document360 that cannot be run locally.
+
+```bash
+cd tests
+npm i
+npx puppeteer browsers install chrome
+```
+
+Copy `tests/.env.example` to `tests/.env` and add your credentials:
+
+```
+AXIOM_DOMAIN=us-east-1.aws.edge.axiom.co
+AXIOM_TOKEN=xaat-your-ingest-token
+AXIOM_DATASET=do11y
+```
+
+The token requires both **ingest** and **query** permissions on the target dataset.
+
+Run the full suite:
+
+```bash
+npm run test-live-e2e
+```
+
+Run a subset of frameworks:
+
+```bash
+FRAMEWORKS=document360,vitepress npm run test-live-e2e
+```
+
+Skip the build step if you have already built:
+
+```bash
+SKIP_BUILD=1 npm run test-live-e2e
+```
+
+The test covers the following sites:
+
+| Framework | Start URL | Second URL |
+|---|---|---|
+| Mintlify | https://axiom.co/docs/query-data/explore | https://axiom.co/docs/reference/datasets |
+| Docusaurus | https://docusaurus.io/docs/configuration | https://docusaurus.io/docs/installation |
+| Nextra | https://nextra.site/docs/docs-theme/start | https://nextra.site/docs/docs-theme/page-configuration |
+| MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ | https://squidfunk.github.io/mkdocs-material/installation/ |
+| VitePress | https://vitepress.dev/guide/getting-started | https://vitepress.dev/guide/what-is-vitepress |
+| Document360 | https://docs.document360.com/docs/custom-css-javascript | https://docs.document360.com/docs/css-snippets |
+
+The test validates the following events per framework:
+
+| Event | Minimum expected | Notes |
+|---|---|---|
+| `page_view` | 2 | Start URL + second URL |
+| `scroll_depth` | 1 | |
+| `link_click` | 1 | |
+| `page_exit` | 1 | |
+| `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
+| `search_opened` | 0 | Best-effort — not all pages have a reachable search element |
+| `code_copied` | 0 | Best-effort — depends on page having copy buttons |
+| `toc_click` | 0 | Best-effort — depends on page having an on-page TOC |
+| `expand_collapse` | 0 | Best-effort — depends on page having `<details>` elements |
+| `feedback` | 0 | Best-effort — depends on page having a feedback widget |
 
 ### Query validation (`tests/test-queries.ts`)
 

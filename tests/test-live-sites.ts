@@ -9,6 +9,9 @@ interface FrameworkSelectors {
   navigationSelector: string;
   footerSelector: string;
   contentSelector: string;
+  tabContainerSelector: string;
+  tocSelector: string;
+  feedbackSelector: string;
 }
 
 interface SelectorResult {
@@ -36,6 +39,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], #navbar, #sidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '#table-of-contents, [data-testid="table-of-contents"], [class*="table-of-contents"], [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   docusaurus: {
     searchSelector: '.DocSearch, .DocSearch-Button',
@@ -44,6 +50,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .navbar, .sidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '.tabs[role="tablist"], [class*="tabs"]',
+    tocSelector: '.table-of-contents, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   nextra: {
     searchSelector: '.nextra-search input, input[placeholder*="search" i], button[aria-label*="search" i]',
@@ -52,6 +61,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
     contentSelector: 'main, article, [role="main"], [class*="content"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '.nextra-toc, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   'mkdocs-material': {
     searchSelector: '.md-search__input',
@@ -60,6 +72,9 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .md-nav, .md-sidebar',
     footerSelector: 'footer, [role="contentinfo"], .md-footer',
     contentSelector: 'main, article, [role="main"], .md-content',
+    tabContainerSelector: '.tabbed-labels, .md-typeset .tabbed-set',
+    tocSelector: '.md-sidebar--secondary .md-nav, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
   vitepress: {
     searchSelector: '.VPNavBarSearch button, .VPNavBarSearchButton, #local-search',
@@ -68,6 +83,20 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     navigationSelector: 'nav, [role="navigation"], .VPNav, .VPSidebar, [class*="nav"], [class*="sidebar"]',
     footerSelector: 'footer, [role="contentinfo"], .VPFooter, [class*="footer"]',
     contentSelector: 'main, article, [role="main"], .VPContent, [class*="content"]',
+    tabContainerSelector: '.vp-code-group .tabs, [role="tablist"]',
+    tocSelector: '.VPDocAsideOutline, [class*="toc"]',
+    feedbackSelector: '[class*="feedback"], [class*="helpful"]',
+  },
+  document360: {
+    searchSelector: '[class*="search-input"], [id*="search"], button[aria-label*="search" i], [class*="search-btn"]',
+    copyButtonSelector: 'button[class*="copy"], button[aria-label*="copy" i]',
+    codeBlockSelector: 'pre, code, [class*="codeblock"]',
+    navigationSelector: '[class*="category-tree"], [class*="d360-left-nav"], nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
+    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
+    contentSelector: '.content_block_text, article, main, [role="main"]',
+    tabContainerSelector: '[role="tablist"], [class*="tab"]',
+    tocSelector: '[class*="article-toc"], [class*="toc"], [class*="table-of-contents"]',
+    feedbackSelector: '[class*="feedback"], [class*="was-article-helpful"], [class*="helpfulness"]',
   },
 };
 
@@ -79,6 +108,7 @@ const TEST_SITES: Record<string, string> = {
   nextra:            'https://nextra.site/docs/docs-theme/start',
   'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/getting-started/',
   vitepress:         'https://vitepress.dev/guide/getting-started',
+  document360:       'https://docs.document360.com/docs/custom-css-javascript',
 };
 
 const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [
@@ -88,7 +118,18 @@ const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [
   'navigationSelector',
   'footerSelector',
   'contentSelector',
+  'tabContainerSelector',
+  'tocSelector',
+  'feedbackSelector',
 ];
+
+// Selectors listed here are not expected to match on every page of that
+// framework and won't count as failures when they return 0 matches.
+const OPTIONAL_SELECTORS: Partial<Record<string, Array<keyof FrameworkSelectors>>> = {
+  docusaurus:  ['feedbackSelector'],
+  nextra:      ['feedbackSelector'],
+  vitepress:   ['feedbackSelector'],
+};
 
 // ─── Test runner ─────────────────────────────────────────────────────────────
 
@@ -159,8 +200,10 @@ async function testFramework(
       continue;
     }
 
-    const pass = SELECTOR_KEYS.filter(k => (result.results[k]?.matched ?? 0) > 0).length;
-    const total = SELECTOR_KEYS.length;
+    const optional = new Set(OPTIONAL_SELECTORS[name] ?? []);
+    const required = SELECTOR_KEYS.filter(k => !optional.has(k));
+    const pass = required.filter(k => (result.results[k]?.matched ?? 0) > 0).length;
+    const total = required.length;
     console.log(`${pass}/${total} selectors matched`);
   }
 
@@ -179,14 +222,17 @@ async function testFramework(
     console.log(`│  ${url}`);
     if (error) {
       console.log(`│  ❌ Load error: ${error}`);
-      grandFail += SELECTOR_KEYS.length;
+      grandFail += SELECTOR_KEYS.filter(k => !(OPTIONAL_SELECTORS[name] ?? []).includes(k)).length;
       continue;
     }
+    const optionalSet = new Set(OPTIONAL_SELECTORS[name] ?? []);
     for (const key of SELECTOR_KEYS) {
       const r = results[key]!;
       const ok = r.matched > 0;
-      const icon = ok ? '✅' : '❌';
-      if (ok) grandPass++; else grandFail++;
+      const isOptional = optionalSet.has(key);
+      const icon = ok ? '✅' : isOptional ? '⚪' : '❌';
+      if (ok) grandPass++;
+      else if (!isOptional) grandFail++;
       let detail = `${r.matched} match(es)`;
       if (r.firstTag) detail += ` — first: <${r.firstTag}>`;
       if (r.firstId) detail += `#${r.firstId}`;
