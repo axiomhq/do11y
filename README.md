@@ -391,7 +391,7 @@ The test covers the following sites:
 | Framework | URL |
 |---|---|
 | Mintlify | https://www.mintlify.com/docs/components/expandables |
-| Docusaurus | https://docusaurus.io/docs/next/markdown-features |
+| Docusaurus | https://docusaurus.io/docs/next/swizzling |
 | Nextra | https://nextra.site/docs/docs-theme/start |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/reference/admonitions |
 | VitePress | https://vitepress.dev/guide/getting-started |

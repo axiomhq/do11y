@@ -93,7 +93,7 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
 // We pick a page with code blocks so copyButton and codeBlock selectors have a chance.
 const TEST_SITES: Record<string, string> = {
   mintlify:          'https://www.mintlify.com/docs/components/expandables',
-  docusaurus:        'https://docusaurus.io/docs/next/markdown-features',
+  docusaurus:        'https://docusaurus.io/docs/next/swizzling',
   nextra:            'https://nextra.site/docs/docs-theme/start',
   'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/reference/admonitions',
   vitepress:         'https://vitepress.dev/guide/getting-started',
