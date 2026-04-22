@@ -87,28 +87,16 @@ const FRAMEWORK_PRESETS: Record<string, FrameworkSelectors> = {
     tocSelector: '.VPDocAsideOutline, [class*="toc"]',
     feedbackSelector: '[class*="feedback"], [class*="helpful"]',
   },
-  document360: {
-    searchSelector: '[class*="search-input"], [id*="search"], button[aria-label*="search" i], [class*="search-btn"]',
-    copyButtonSelector: 'button[class*="copy"], button[aria-label*="copy" i]',
-    codeBlockSelector: 'pre, code, [class*="codeblock"]',
-    navigationSelector: '[class*="category-tree"], [class*="d360-left-nav"], nav, [role="navigation"], [class*="nav"], [class*="sidebar"]',
-    footerSelector: 'footer, [role="contentinfo"], [class*="footer"]',
-    contentSelector: '.content_block_text, article, main, [role="main"]',
-    tabContainerSelector: '[role="tablist"], [class*="tab"]',
-    tocSelector: '[class*="article-toc"], [class*="toc"], [class*="table-of-contents"]',
-    feedbackSelector: '[class*="feedback"], [class*="was-article-helpful"], [class*="helpfulness"]',
-  },
 };
 
 // Real documentation sites for each framework.
 // We pick a page with code blocks so copyButton and codeBlock selectors have a chance.
 const TEST_SITES: Record<string, string> = {
-  mintlify:          'https://axiom.co/docs/query-data/explore',
-  docusaurus:        'https://docusaurus.io/docs/configuration',
+  mintlify:          'https://www.mintlify.com/docs/components/expandables',
+  docusaurus:        'https://docusaurus.io/docs/next/markdown-features',
   nextra:            'https://nextra.site/docs/docs-theme/start',
-  'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/getting-started/',
+  'mkdocs-material': 'https://squidfunk.github.io/mkdocs-material/reference/admonitions',
   vitepress:         'https://vitepress.dev/guide/getting-started',
-  document360:       'https://docs.document360.com/docs/custom-css-javascript',
 };
 
 const SELECTOR_KEYS: Array<keyof FrameworkSelectors> = [
