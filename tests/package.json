@@ -5,6 +5,7 @@
   "scripts": {
     "test-integrations": "tsx test-integrations.ts",
     "test-live-sites": "tsx test-live-sites.ts",
+    "test-live-e2e": "tsx test-live-e2e.ts",
     "test-queries": "tsx test-queries.ts"
   },
   "dependencies": {

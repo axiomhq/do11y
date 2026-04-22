@@ -1203,6 +1203,15 @@ function setupSectionVisibilityTracking(): void {
 
   const threshold = config.sectionVisibleThreshold * 1000;
 
+  // Re-observe headings when an 'articleload' event fires. Document360 (and
+  // similar hosted platforms) inject article content asynchronously after the
+  // URL changes, so headings are absent when do11y first calls observeHeadings().
+  // This listener is harmless on other frameworks where the event never fires.
+  window.addEventListener('articleload', () => {
+    sectionTimers = {};
+    observeHeadings();
+  });
+
   sectionObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const id = entry.target.getAttribute('data-do11y-section-id');
@@ -1449,6 +1458,10 @@ function setupExpandCollapseTracking(): void {
 
 let mutationObserver: MutationObserver | null = null;
 
+// Assigned inside init() once tracking is ready. The pushState/replaceState
+// shims below (installed at module evaluation time) call this when non-null.
+let _spaNavigationHandler: (() => void) | null = null;
+
 function init(): void {
   if (window.Do11yConfig && typeof window.Do11yConfig === 'object') {
     for (const key in window.Do11yConfig) {
@@ -1524,7 +1537,10 @@ function init(): void {
 
   let lastPath = window.location.pathname;
 
-  mutationObserver = new MutationObserver(() => {
+  // Called from any SPA navigation detector (pushState hook, MutationObserver,
+  // popstate). Updates lastPath first so subsequent detectors for the same
+  // navigation are no-ops.
+  function handleSpaNavigation(): void {
     if (window.location.pathname !== lastPath) {
       lastPath = window.location.pathname;
       emitPageExit();
@@ -1537,24 +1553,16 @@ function init(): void {
       observeHeadings();
       checkScrollDepth();
     }
-  });
+  }
 
+  // Wire up the module-level shim installed at script evaluation time (before
+  // any SPA router could capture a reference to the original pushState).
+  _spaNavigationHandler = handleSpaNavigation;
+
+  mutationObserver = new MutationObserver(handleSpaNavigation);
   mutationObserver.observe(document.body, { childList: true, subtree: true });
 
-  window.addEventListener('popstate', () => {
-    if (window.location.pathname !== lastPath) {
-      lastPath = window.location.pathname;
-      emitPageExit();
-      trackedScrollDepths = new Set();
-      pageLoadTime = Date.now();
-      lastActivityTime = Date.now();
-      totalActiveTime = 0;
-      isPageVisible = true;
-      trackPageView();
-      observeHeadings();
-      checkScrollDepth();
-    }
-  });
+  window.addEventListener('popstate', handleSpaNavigation);
 
   // Freeze the resolved config so that third-party scripts loaded after
   // this point cannot mutate axiomHost, axiomToken, or any other field
@@ -1582,6 +1590,22 @@ function cleanup(): void {
 }
 
 if (!_alreadyLoaded) {
+  // Patch pushState at module evaluation time — synchronously, before any SPA
+  // router (React Router, Vue Router, etc.) initializes. Routers often capture
+  // a bound reference to history.pushState during their own setup; patching
+  // inside DOMContentLoaded (i.e. init()) is too late because the router has
+  // already saved the un-patched original.
+  //
+  // replaceState is intentionally NOT patched here. It is used by frameworks
+  // for URL canonicalization (e.g. /path → /path/) rather than actual page
+  // navigation, so intercepting it early causes false-positive handleSpaNavigation()
+  // calls that reset IntersectionObserver section-visibility timers mid-session.
+  const _origPushState = history.pushState.bind(history);
+  history.pushState = (...args: Parameters<typeof history.pushState>) => {
+    _origPushState(...args);
+    _spaNavigationHandler?.();
+  };
+
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
