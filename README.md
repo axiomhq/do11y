@@ -464,7 +464,7 @@ The test validates the following events per framework:
 | `scroll_depth` | 1 | |
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
-| `expand_collapse` | 1 | 0 for Nextra (no documentation-level expandables on test pages) |
+| `expand_collapse` | 1 | 0 for Nextra (no documentation-level expandables on test page) |
 | `toc_click` | 1 | |
 | `search_opened` | 0 | Best-effort — not all frameworks render search the same way |
 | `code_copied` | 1 | |
