@@ -299,7 +299,11 @@ async function runInteractions(
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 6. Expand a <details> element (expand_collapse)
+  // 6. Expand a <details> element (expand_collapse).
+  //    Only native <details> elements represent documentation-level expandable
+  //    content (Mintlify accordion components, mkdocs-material collapsible
+  //    admonitions, etc.). We intentionally do not match [aria-expanded]
+  //    sidebar nav buttons — those are structural UI, not content expandables.
   log('  → expand_collapse');
   try {
     const expanded = await page.evaluate(() => {
@@ -503,6 +507,10 @@ const EXPECTED_EVENTS: Record<string, EventExpectation> = {
 // Frameworks confirmed to have a page-level feedback widget on their test pages.
 const FEEDBACK_REQUIRED = new Set(['mintlify', 'mkdocs-material']);
 
+// Frameworks whose test pages have no documentation-level expandable content
+// (<details> elements). expand_collapse is best-effort for these.
+const EXPAND_OPTIONAL = new Set(['nextra', 'vitepress', 'docusaurus']);
+
 function validateEvents(
   framework: string,
   events: AxiomEvent[],
@@ -517,7 +525,9 @@ function validateEvents(
   const lines: string[] = [];
 
   for (const [type, exp] of Object.entries(EXPECTED_EVENTS)) {
-    const min   = (type === 'feedback' && FEEDBACK_REQUIRED.has(framework)) ? 1 : exp.min;
+    const min   = (type === 'feedback'        && FEEDBACK_REQUIRED.has(framework)) ? 1
+                : (type === 'expand_collapse' && EXPAND_OPTIONAL.has(framework))   ? 0
+                : exp.min;
     const count = byType[type] ?? 0;
     const ok    = count >= min;
     if (ok) pass++; else failCount++;
