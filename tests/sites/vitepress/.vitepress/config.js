@@ -11,5 +11,8 @@ export default {
       { text: 'Introduction', link: '/' },
       { text: 'Guide', link: '/guide' },
     ],
+    search: {
+      provider: 'local'
+    }
   },
 };
