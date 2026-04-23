@@ -66,7 +66,7 @@ const LIVE_SITES: Record<string, LiveSite> = {
   },
   nextra: {
     startUrl:  'https://nextra.site/docs/docs-theme/start',
-    secondUrl: 'https://nextra.site/docs/docs-theme/theme-configuration',
+    secondUrl: 'https://nextra.site/docs/docs-theme/built-ins/layout',
   },
   'mkdocs-material': {
     startUrl:  'https://squidfunk.github.io/mkdocs-material/reference/admonitions',
