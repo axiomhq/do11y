@@ -314,16 +314,68 @@ async function runInteractions(
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 7. Click feedback widget (feedback)
+  // 7. Click feedback widget (feedback).
+  //    Scroll to bottom using container-aware logic so frameworks like Mintlify
+  //    that scroll a <div> container — not the window — reach the feedback
+  //    section. Then wait for the element to render before querying.
   log('  → feedback');
   try {
+    await page.evaluate(() => {
+      // Mirror the container-detection in autoScroll so the right element scrolls.
+      const contentEl = document.querySelector('[role="main"], main, article');
+      let container: Element | null = null;
+      if (contentEl) {
+        let el: Element | null = contentEl;
+        while (el && el !== document.body && el !== document.documentElement) {
+          const style = window.getComputedStyle(el);
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+              el.scrollHeight > el.clientHeight) {
+            container = el;
+            break;
+          }
+          el = el.parentElement;
+        }
+      }
+      if (container) { (container as HTMLElement).scrollTop = container.scrollHeight; }
+      else { window.scrollTo(0, document.body.scrollHeight); }
+    });
+
+    // Wait for the feedback widget to appear (lazy-rendered on scroll) rather
+    // than a fixed sleep. Falls through silently if absent on this framework.
+    await page.waitForSelector(
+      '#feedback-thumbs-up, #feedback-thumbs-down, button[data-md-value], .md-feedback',
+      { timeout: 3000 },
+    ).catch(() => { /* widget absent on this framework — handled below */ });
+
     const feedbackClicked = await page.evaluate(() => {
+      // 1. Stable IDs: Mintlify renders #feedback-thumbs-up / #feedback-thumbs-down.
+      const byId = document.querySelector('#feedback-thumbs-up, #feedback-thumbs-down');
+      if (byId) { (byId as HTMLElement).click(); return true; }
+
+      // 2. Data-attribute: mkdocs-material uses button[data-md-value].
+      const byData = document.querySelector('button[data-md-value]');
+      if (byData) { (byData as HTMLElement).click(); return true; }
+
+      // 3. Known container selectors — click the first child button.
       const container = document.querySelector(
-        '[class*="feedback"], [class*="helpful"], [data-feedback]'
+        '.md-feedback, [data-feedback], [class*="PageFeedback"], [class*="page-feedback"]'
       );
       if (container) {
-        const btn = container.querySelector('button[data-value], button');
+        const btn = container.querySelector('button');
         if (btn) { (btn as HTMLElement).click(); return true; }
+      }
+
+      // 4. Text-based fallback: smallest element whose text mentions the prompt.
+      const candidates = Array.from(document.querySelectorAll('form, section, div, footer, aside'));
+      for (const el of candidates) {
+        const text = el.textContent?.toLowerCase() ?? '';
+        if (
+          (text.includes('was this page') || text.includes('helpful?') || text.includes('page helpful')) &&
+          text.length < 600
+        ) {
+          const btn = el.querySelector('button');
+          if (btn) { (btn as HTMLElement).click(); return true; }
+        }
       }
       return false;
     });
@@ -444,11 +496,15 @@ const EXPECTED_EVENTS: Record<string, EventExpectation> = {
   page_exit:       { min: 1 },
   expand_collapse: { min: 1 },
   toc_click:       { min: 1 },
-  feedback:        { min: 0 },   // best-effort — requires a feedback widget in DOM
+  feedback:        { min: 0 },   // default best-effort; raised to 1 for sites with confirmed widgets
   section_visible: { min: 1 },
 };
 
+// Frameworks confirmed to have a page-level feedback widget on their test pages.
+const FEEDBACK_REQUIRED = new Set(['mintlify', 'mkdocs-material']);
+
 function validateEvents(
+  framework: string,
   events: AxiomEvent[],
 ): { pass: number; fail: number; lines: string[] } {
   const byType: Record<string, number> = {};
@@ -460,7 +516,8 @@ function validateEvents(
   let failCount = 0;
   const lines: string[] = [];
 
-  for (const [type, { min }] of Object.entries(EXPECTED_EVENTS)) {
+  for (const [type, exp] of Object.entries(EXPECTED_EVENTS)) {
+    const min   = (type === 'feedback' && FEEDBACK_REQUIRED.has(framework)) ? 1 : exp.min;
     const count = byType[type] ?? 0;
     const ok    = count >= min;
     if (ok) pass++; else failCount++;
@@ -557,7 +614,7 @@ function validateEvents(
       continue;
     }
 
-    const v = validateEvents(fwEvents);
+    const v = validateEvents(name, fwEvents);
     for (const line of v.lines) console.log(`│  ${line}`);
     grandPass += v.pass;
     grandFail += v.fail;
