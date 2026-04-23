@@ -183,7 +183,7 @@ The selectors work on sites using the standard themes of each supported framewor
 
 ### Framework selector drift
 
-CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts` and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
+CSS selectors reflect each framework's current DOM output and may break when frameworks release major updates that change class names or HTML structure. The test suites (`test-live-sites.ts`, `test-e2e-live.ts`, and `test-queries.ts`) exist specifically to catch this. Run them periodically to verify selectors still match.
 
 ## Manual setup
 
@@ -373,7 +373,19 @@ Do11y doesn't expose `cleanup()` and `debug()` on the global object. Exposing `c
 
 ## Tests
 
-The `tests` folder contains multiple layers of testing.
+The `tests` folder contains multiple layers of testing. Each catches a different class of failure:
+
+| What broke | Which test catches it |
+|---|---|
+| Framework updated a CSS class name (selector drift) | `test-live-sites.ts` |
+| do11y broken on a specific framework's local dev server | `test-integrations.ts` |
+| Events not reaching Axiom from a real production site | `test-live-e2e.ts` |
+
+**`test-live-sites.ts`** checks that CSS selectors match real DOM elements in production. It requires no Axiom credentials and no event ingestion — its only job is to catch selector drift when a framework ships a DOM update that renames class names.
+
+**`test-integrations.ts`** runs against local scaffolded sites where the page content is fully under your control. Every interaction is guaranteed to fire: the guide page includes a `<details>` block, a TOC, a code block with a copy button, and a feedback widget. This is why it can assert hard minimums (`code_copied: 1`, `expand_collapse: 1`, `toc_click: 1`) that the live E2E test cannot. It also validates that do11y works correctly with each framework's dev server, SPA routing model, and build toolchain in a hermetic environment.
+
+**`test-live-e2e.ts`** is the only test that proves events reach Axiom from a real site. It catches issues that only surface in production: CDN caching, CSP headers, third-party script interference, or a site's own JavaScript conflicting with do11y.
 
 ### Selector tests against live sites (`tests/test-live-sites.ts`)
 
@@ -395,6 +407,69 @@ The test covers the following sites:
 | Nextra | https://nextra.site/docs/docs-theme/start |
 | MkDocs Material | https://squidfunk.github.io/mkdocs-material/reference/admonitions |
 | VitePress | https://vitepress.dev/guide/markdown |
+
+### E2E live-site tests (`tests/test-e2e-live.ts`)
+
+End-to-end tests that inject `do11y.js` into the same live public documentation sites as `test-live-sites.ts` via Puppeteer's `evaluateOnNewDocument`, drive a realistic user journey on each site, send events to Axiom, and then query Axiom to validate that the expected event types arrived. No local dev servers are required.
+
+```bash
+cd tests
+npm i
+npx puppeteer browsers install chrome
+```
+
+Copy `tests/.env.example` to `tests/.env` and add your credentials:
+
+```
+AXIOM_DOMAIN=us-east-1.aws.edge.axiom.co
+AXIOM_TOKEN=xaat-your-ingest-token
+AXIOM_DATASET=do11y
+```
+
+The token requires both **ingest** and **query** permissions on the target dataset.
+
+Run the full suite:
+
+```bash
+npm run test-e2e-live
+```
+
+Run a subset of frameworks:
+
+```bash
+FRAMEWORKS=mintlify,vitepress npm run test-e2e-live
+```
+
+Skip the build step on repeat runs (uses an existing `dist/do11y.js`):
+
+```bash
+SKIP_BUILD=1 npm run test-e2e-live
+```
+
+The test covers the same sites as `test-live-sites.ts`:
+
+| Framework | Start URL | Second URL |
+|---|---|---|
+| Mintlify | https://www.mintlify.com/docs/components/expandables | https://www.mintlify.com/docs/components/accordions |
+| Docusaurus | https://docusaurus.io/docs/next/swizzling | https://docusaurus.io/docs/next/markdown-features |
+| Nextra | https://nextra.site/docs/docs-theme/start | https://nextra.site/docs/docs-theme/built-ins/layout |
+| MkDocs Material | https://squidfunk.github.io/mkdocs-material/reference/admonitions | https://squidfunk.github.io/mkdocs-material/reference/code-blocks/ |
+| VitePress | https://vitepress.dev/guide/getting-started | https://vitepress.dev/guide/markdown |
+
+The test validates the following events per framework:
+
+| Event | Minimum expected | Notes |
+|---|---|---|
+| `page_view` | 2 | Start page + second page |
+| `scroll_depth` | 1 | |
+| `link_click` | 1 | |
+| `page_exit` | 1 | |
+| `expand_collapse` | 1 | 0 for Nextra (no documentation-level expandables on test pages) |
+| `toc_click` | 1 | |
+| `search_opened` | 0 | Best-effort — not all frameworks render search the same way |
+| `code_copied` | 1 | |
+| `feedback` | 0 | 1 for Mintlify and MkDocs Material (confirmed widget on test pages) |
+| `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2 s dwell on page load |
 
 ### Query validation (`tests/test-queries.ts`)
 
