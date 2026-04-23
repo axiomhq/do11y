@@ -218,7 +218,7 @@ window.Do11yConfig = {
   // Any option from the Configuration table below can be set here
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@1.0.0/dist/do11y.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js"></script>
 ```
 
 When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
@@ -390,11 +390,11 @@ The test covers the following sites:
 
 | Framework | URL |
 |---|---|
-| Mintlify | https://axiom.co/docs/query-data/explore |
-| Docusaurus | https://docusaurus.io/docs/configuration |
-| Nextra | https://nextra.site/docs/getting-started |
-| MkDocs Material | https://squidfunk.github.io/mkdocs-material/getting-started/ |
-| VitePress | https://vitepress.dev/guide/getting-started |
+| Mintlify | https://www.mintlify.com/docs/components/expandables |
+| Docusaurus | https://docusaurus.io/docs/next/swizzling |
+| Nextra | https://nextra.site/docs/docs-theme/start |
+| MkDocs Material | https://squidfunk.github.io/mkdocs-material/reference/admonitions |
+| VitePress | https://vitepress.dev/guide/markdown |
 
 ### Query validation (`tests/test-queries.ts`)
 

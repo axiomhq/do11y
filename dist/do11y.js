@@ -890,12 +890,13 @@
 			if (!button.closest(validateSelector(config.feedbackSelector) ?? "[class*=\"feedback\"], [class*=\"helpful\"], [class*=\"rating\"], [class*=\"was-this\"], [data-feedback]")) return;
 			const buttonText = (button.textContent ?? "").trim().toLowerCase();
 			const ariaLabel = (button.getAttribute("aria-label") ?? "").toLowerCase();
-			const rawDataValue = button.getAttribute("data-value") ?? button.getAttribute("data-feedback");
+			const titleAttr = (button.getAttribute("title") ?? "").toLowerCase();
+			const rawDataValue = button.getAttribute("data-value") ?? button.getAttribute("data-md-value") ?? button.getAttribute("data-feedback");
 			const dataValue = rawDataValue && /^[\w\s.,!?-]{1,50}$/.test(rawDataValue) ? rawDataValue : null;
 			let rating = null;
 			if (dataValue) rating = dataValue;
-			else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + " " + ariaLabel)) rating = "yes";
-			else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + " " + ariaLabel)) rating = "no";
+			else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + " " + ariaLabel + " " + titleAttr)) rating = "yes";
+			else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + " " + ariaLabel + " " + titleAttr)) rating = "no";
 			if (!rating) return;
 			queueEvent("feedback", { rating });
 		});
