@@ -917,6 +917,7 @@
 			const trigger = e.target.closest("[aria-expanded], [class*=\"accordion\"] button, [class*=\"collapsible\"] button");
 			if (!trigger) return;
 			if (trigger.closest("details")) return;
+			if (trigger.closest("nav, [role=\"navigation\"], header")) return;
 			const wasExpanded = trigger.getAttribute("aria-expanded") === "true";
 			queueEvent("expand_collapse", {
 				summary: sanitizeText(trigger.textContent, 100),

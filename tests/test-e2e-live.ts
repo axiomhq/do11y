@@ -49,6 +49,7 @@ interface AxiomEvent {
 
 interface EventExpectation {
   min: number;
+  max?: number; // when set, any count above this is a failure
 }
 
 // ─── Live site definitions ────────────────────────────────────────────────────
@@ -507,9 +508,10 @@ const EXPECTED_EVENTS: Record<string, EventExpectation> = {
 // Frameworks confirmed to have a page-level feedback widget on their test pages.
 const FEEDBACK_REQUIRED = new Set(['mintlify', 'mkdocs-material']);
 
-// Frameworks whose test pages have no documentation-level expandable content
-// (<details> elements). expand_collapse is best-effort for these.
-const EXPAND_OPTIONAL = new Set(['nextra', 'vitepress', 'docusaurus']);
+// Frameworks whose test pages have no documentation-level expandable content.
+// expand_collapse events on these pages indicate a false positive in do11y
+// (e.g. a sidebar nav toggle being mis-classified), so we assert max: 0.
+const EXPAND_NONE = new Set(['nextra', 'vitepress']);
 
 function validateEvents(
   framework: string,
@@ -525,14 +527,17 @@ function validateEvents(
   const lines: string[] = [];
 
   for (const [type, exp] of Object.entries(EXPECTED_EVENTS)) {
-    const min   = (type === 'feedback'        && FEEDBACK_REQUIRED.has(framework)) ? 1
-                : (type === 'expand_collapse' && EXPAND_OPTIONAL.has(framework))   ? 0
-                : exp.min;
+    const min = (type === 'feedback'        && FEEDBACK_REQUIRED.has(framework)) ? 1
+              : (type === 'expand_collapse' && EXPAND_NONE.has(framework))       ? 0
+              : exp.min;
+    const max = (type === 'expand_collapse' && EXPAND_NONE.has(framework))       ? 0
+              : exp.max;
     const count = byType[type] ?? 0;
-    const ok    = count >= min;
+    const ok    = count >= min && (max === undefined || count <= max);
     if (ok) pass++; else failCount++;
-    const icon = ok ? '✅' : (min === 0 ? '⚠️' : '❌');
-    lines.push(`    ${icon} ${type.padEnd(18)} ${count} event(s) (expected ≥${min})`);
+    const expectStr = max !== undefined ? `=${max}` : `≥${min}`;
+    const icon = ok ? '✅' : (min === 0 && max === undefined ? '⚠️' : '❌');
+    lines.push(`    ${icon} ${type.padEnd(18)} ${count} event(s) (expected ${expectStr})`);
   }
 
   return { pass, fail: failCount, lines };

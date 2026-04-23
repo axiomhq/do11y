@@ -1420,6 +1420,10 @@ function setupExpandCollapseTracking(): void {
     );
     if (!trigger) return;
     if (trigger.closest('details')) return;
+    // Sidebar navigation toggles (nextra, vitepress, mkdocs sidebar sections,
+    // etc.) also use aria-expanded but are structural UI, not content
+    // expandables. Exclude anything inside a navigation landmark.
+    if (trigger.closest('nav, [role="navigation"], header')) return;
 
     const wasExpanded = trigger.getAttribute('aria-expanded') === 'true';
 
