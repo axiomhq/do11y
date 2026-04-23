@@ -1364,7 +1364,12 @@ function setupFeedbackTracking(): void {
 
     const buttonText = (button.textContent ?? '').trim().toLowerCase();
     const ariaLabel = (button.getAttribute('aria-label') ?? '').toLowerCase();
-    const rawDataValue = button.getAttribute('data-value') ?? button.getAttribute('data-feedback');
+    const titleAttr = (button.getAttribute('title') ?? '').toLowerCase();
+    // data-md-value is used by MkDocs Material; data-value / data-feedback are used by other frameworks
+    const rawDataValue =
+      button.getAttribute('data-value') ??
+      button.getAttribute('data-md-value') ??
+      button.getAttribute('data-feedback');
     // Constrain data-value to a safe token: alphanumeric + common punctuation,
     // max 50 chars. Prevents arbitrary DOM-injected strings from reaching the
     // analytics dataset or a downstream dashboard unescaped.
@@ -1375,9 +1380,9 @@ function setupFeedbackTracking(): void {
     let rating: string | null = null;
     if (dataValue) {
       rating = dataValue;
-    } else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + ' ' + ariaLabel)) {
+    } else if (/\byes\b|👍|thumbs.?up|helpful/i.test(buttonText + ' ' + ariaLabel + ' ' + titleAttr)) {
       rating = 'yes';
-    } else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + ' ' + ariaLabel)) {
+    } else if (/\bno\b|👎|thumbs.?down|not.?helpful/i.test(buttonText + ' ' + ariaLabel + ' ' + titleAttr)) {
       rating = 'no';
     }
     if (!rating) return;
