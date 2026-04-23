@@ -104,6 +104,9 @@ function buildPatchedScript(framework: string, testRunId: string): string {
   axiomHost: '${AXIOM_DOMAIN.trim()}',
   axiomDataset: '${AXIOM_DATASET.trim()}',
   axiomToken: '${AXIOM_TOKEN.trim()}',
+  // Tells do11y which preset to load (tocSelector, copyButtonSelector, etc.)
+  // so framework-specific selectors are correct on every live site.
+  framework: '${framework}',
   debug: true,
   allowedDomains: null,
   // Lower threshold so headings visible for ≥1s are recorded;
@@ -265,9 +268,23 @@ async function runInteractions(
   await page.keyboard.press('Escape');
   await sleep(300);
 
-  // 5. Click copy button (code_copied)
+  // 5. Click copy button (code_copied).
+  //    Frameworks like mkdocs-material and nextra hide copy buttons with
+  //    opacity/pointer-events until the code block is hovered. Puppeteer's
+  //    real mouse.move() fires actual mouseover/mouseenter events so the CSS
+  //    transition fires and the button becomes interactive before we click.
   log('  → code_copied');
   try {
+    // Scroll first <pre> into view and hover it to reveal hidden copy buttons.
+    await page.evaluate(() => {
+      document.querySelector('pre')?.scrollIntoView({ block: 'center' });
+    });
+    const preEl = await page.$('pre');
+    if (preEl) {
+      await preEl.hover();
+      await sleep(400); // allow CSS transition to complete
+    }
+
     const copyClicked = await page.evaluate(() => {
       const el = document.querySelector(
         'button.clean-btn[aria-label*="copy" i], button[class*="copyButton"], ' +
