@@ -67,11 +67,11 @@ const LIVE_SITES: Record<string, LiveSite> = {
   },
   nextra: {
     startUrl:  'https://nextra.site/docs/docs-theme/start',
-    secondUrl: 'https://nextra.site/docs/docs-theme/built-ins/layout',
+    secondUrl: 'https://nextra.site/docs',                              // linked via breadcrumb; has expandable FAQ
   },
   'mkdocs-material': {
     startUrl:  'https://squidfunk.github.io/mkdocs-material/reference/admonitions',
-    secondUrl: 'https://squidfunk.github.io/mkdocs-material/reference/code-blocks/',
+    secondUrl: 'https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/', // linked inline from admonitions
   },
   vitepress: {
     startUrl:  'https://vitepress.dev/guide/getting-started',
@@ -388,35 +388,40 @@ async function runInteractions(
   } catch { /* ignore */ }
   await sleep(500);
 
-  // 8. Click internal link to second page (link_click + page_view)
-  //    Build candidate href values from the second URL so both absolute and
-  //    relative variants in the rendered HTML are covered.
+  // 8. Click internal link to second page (link_click + page_view).
+  //    We compare each anchor's resolved .href property (always an absolute URL
+  //    in the DOM) rather than the raw href attribute, so relative hrefs like
+  //    ../icons-emojis/ are matched correctly alongside absolute ones.
   log('  → link_click (internal) + page_view (second page)');
-  const secondParsed = new URL(site.secondUrl);
-  const secondPath   = secondParsed.pathname;
-  const pathNoSlash  = secondPath.replace(/\/$/, '');
-  const linkSel = [
-    `a[href="${site.secondUrl}"]`,
-    `a[href="${secondPath}"]`,
-    `a[href="${pathNoSlash}"]`,
-    `a[href="${pathNoSlash}/"]`,
-    `a[href="${pathNoSlash}.html"]`,
-  ].join(', ');
+  const secondPath = new URL(site.secondUrl).pathname.replace(/\/$/, '');
 
   try {
     let clicked = false;
     try {
-      await page.waitForSelector(linkSel, { timeout: 5000 });
-      await page.evaluate((sel: string) => {
-        const el = document.querySelector(sel);
-        if (el) el.scrollIntoView({ block: 'center' });
-      }, linkSel);
-      await sleep(300);
-      await Promise.all([
-        page.click(linkSel),
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {}),
-      ]);
-      clicked = true;
+      const found = await page.evaluate((targetPath: string) => {
+        for (const a of Array.from(document.querySelectorAll('a[href]'))) {
+          try {
+            const resolved = new URL((a as HTMLAnchorElement).href);
+            if (resolved.pathname.replace(/\/$/, '') === targetPath) {
+              (a as HTMLElement).setAttribute('data-do11y-test-nav', '1');
+              return true;
+            }
+          } catch { /* ignore unparseable hrefs */ }
+        }
+        return false;
+      }, secondPath);
+
+      if (found) {
+        await page.evaluate(() => {
+          document.querySelector('[data-do11y-test-nav]')?.scrollIntoView({ block: 'center' });
+        });
+        await sleep(300);
+        await Promise.all([
+          page.click('[data-do11y-test-nav]'),
+          page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {}),
+        ]);
+        clicked = true;
+      }
     } catch { /* fall through to direct navigation */ }
 
     if (!clicked) {
