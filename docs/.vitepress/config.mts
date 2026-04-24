@@ -1,28 +1,40 @@
 import { defineConfig } from 'vitepress'
 
-// https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Do11y",
-  description: "Do11y",
+  description: "Documentation observability for Axiom. Stream behavioral events from your docs site in real time.",
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: 'Quickstart', link: '/quickstart' },
+      { text: 'Reference', link: '/reference' },
     ],
 
     sidebar: [
       {
-        text: 'Examples',
+        text: 'Getting started',
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
+          { text: 'Quickstart', link: '/quickstart' },
+        ]
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'Configuration', link: '/reference#configuration' },
+          { text: 'Events', link: '/reference#events' },
+          { text: 'AI traffic detection', link: '/reference#ai-traffic-detection' },
+          { text: 'JavaScript API', link: '/reference#javascript-api' },
         ]
       }
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-    ]
+      { icon: 'github', link: 'https://github.com/axiomhq/do11y' }
+    ],
+
+    footer: {
+      message: 'Released under the MIT License.',
+      copyright: 'Copyright © Axiom, Inc.'
+    }
   }
 })
