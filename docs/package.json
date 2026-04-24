@@ -1,0 +1,11 @@
+{
+  "name": "do11y-docs",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "dependencies": {
+    "vitepress": "^2.0.0-alpha.17"
+  }
+}
