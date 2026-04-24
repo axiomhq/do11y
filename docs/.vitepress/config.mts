@@ -4,7 +4,18 @@ export default defineConfig({
   base: '/do11y/',
   title: "Do11y",
   description: "Documentation observability for Axiom. Stream behavioral events from your docs site in real time.",
+  sitemap: {
+    hostname: 'https://axiomhq.github.io/do11y/',
+  },
   themeConfig: {
+    siteTitle: 'Do11y Documentation',
+    
+    logo: '/logo.svg',
+
+    search: {
+      provider: 'local',
+    },
+
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Quickstart', link: '/quickstart' },
@@ -13,9 +24,17 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: 'Getting started',
+        text: 'Get started',
         items: [
-          { text: 'Quickstart', link: '/quickstart' },
+          { text: 'Introduction', link: '/quickstart#introduction' },
+          { text: 'Prerequisites', link: '/quickstart#prerequisites' },
+          { text: 'Mintlify', link: '/quickstart#mintlify' },
+          { text: 'Docusaurus', link: '/quickstart#docusaurus' },
+          { text: 'Nextra', link: '/quickstart#nextra' },
+          { text: 'VitePress', link: '/quickstart#vitepress' },
+          { text: 'MkDocs Material', link: '/quickstart#mkdocs-material' },
+          { text: 'Manual setup', link: '/quickstart#manual-setup' },
+          { text: 'Integration dashboard', link: '/quickstart#integration-dashboard' },
         ]
       },
       {
@@ -28,6 +47,11 @@ export default defineConfig({
         ]
       }
     ],
+
+    editLink: {
+      pattern: 'https://github.com/axiomhq/do11y/edit/main/docs/:path',
+      text: 'Edit this page on GitHub',
+    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/axiomhq/do11y' }

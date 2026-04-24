@@ -1,4 +1,6 @@
-# Quickstart
+# Get started
+
+## Introduction
 
 Do11y is a documentation observability solution from [Axiom](https://axiom.co). It streams behavioral events from your docs site to Axiom in real time: page views, scroll depth, link clicks, search queries, code-block copies, section reading time, tab switches, TOC clicks, feedback, and expand/collapse interactions.
 
