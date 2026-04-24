@@ -17,3 +17,4 @@ build/
 .next/
 .docusaurus/
 **/.vitepress/cache
+**/.vitepress/dist

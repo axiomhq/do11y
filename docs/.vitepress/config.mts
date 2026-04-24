@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/do11y/',
   title: "Do11y",
   description: "Documentation observability for Axiom. Stream behavioral events from your docs site in real time.",
   themeConfig: {
