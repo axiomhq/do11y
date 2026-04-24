@@ -4,6 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "test-integrations": "tsx test-integrations.ts",
+    "test-e2e-live": "tsx test-e2e-live.ts",
     "test-live-sites": "tsx test-live-sites.ts",
     "test-queries": "tsx test-queries.ts"
   },
