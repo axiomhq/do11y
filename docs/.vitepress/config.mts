@@ -10,7 +10,10 @@ export default defineConfig({
   themeConfig: {
     siteTitle: 'Do11y Documentation',
     
-    logo: '/logo.svg',
+    logo: {
+      light: '/logo-light.svg',
+      dark: '/logo-dark.svg',
+    },
 
     search: {
       provider: 'local',
