@@ -48,6 +48,11 @@ export default defineConfig({
       }
     ],
 
+    docFooter: {
+      prev: false,
+      next: false,
+    },
+
     editLink: {
       pattern: 'https://github.com/axiomhq/do11y/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
