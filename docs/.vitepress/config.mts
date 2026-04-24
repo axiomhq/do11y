@@ -18,6 +18,11 @@ export default defineConfig({
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:site', content: '@axiomhq' }],
     ['meta', { name: 'twitter:image', content: OG_IMAGE }],
+    ['meta', { name: 'axiom-do11y-domain', content: 'us-east-1.aws.edge.axiom.co' }],
+    ['meta', { name: 'axiom-do11y-token', content: 'xaat-72de74ac-7a9e-45a2-87cb-6b31cd8a3a84' }],
+    ['meta', { name: 'axiom-do11y-dataset', content: 'mano-docs-site-of-do11y' }],
+    ['meta', { name: 'axiom-do11y-framework', content: 'vitepress' }],
+    ['script', { src: 'https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js' }],
   ],
   themeConfig: {
     siteTitle: 'Do11y Documentation',
