@@ -1,3 +1,15 @@
+---
+title: Reference
+description: Full reference for Do11y configuration options, events, AI traffic detection fields, and the JavaScript API.
+head:
+  - - meta
+    - property: og:title
+      content: Reference — Do11y
+  - - meta
+    - property: og:description
+      content: Full reference for Do11y configuration options, events, AI traffic detection fields, and the JavaScript API.
+---
+
 # Reference
 
 ## Configuration

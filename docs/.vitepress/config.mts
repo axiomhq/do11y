@@ -1,12 +1,24 @@
 import { defineConfig } from 'vitepress'
 
+const SITE_URL = 'https://axiomhq.github.io/do11y'
+const OG_IMAGE = `${SITE_URL}/og-image.png`
+
 export default defineConfig({
   base: '/do11y/',
   title: "Do11y",
   description: "Documentation observability for Axiom. Stream behavioral events from your docs site in real time.",
   sitemap: {
-    hostname: 'https://axiomhq.github.io/do11y/',
+    hostname: `${SITE_URL}/`,
   },
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/do11y/logo-dark.svg' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'Do11y' }],
+    ['meta', { property: 'og:image', content: OG_IMAGE }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:site', content: '@axiomhq' }],
+    ['meta', { name: 'twitter:image', content: OG_IMAGE }],
+  ],
   themeConfig: {
     siteTitle: 'Do11y Documentation',
     

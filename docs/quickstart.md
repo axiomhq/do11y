@@ -1,3 +1,15 @@
+---
+title: Quickstart
+description: Install Do11y on Mintlify, Docusaurus, Nextra, VitePress, or MkDocs Material in minutes. Stream documentation usage events to Axiom in real time.
+head:
+  - - meta
+    - property: og:title
+      content: Quickstart — Do11y
+  - - meta
+    - property: og:description
+      content: Install Do11y on Mintlify, Docusaurus, Nextra, VitePress, or MkDocs Material in minutes.
+---
+
 # Get started
 
 ## Introduction
