@@ -33,9 +33,7 @@ window.Do11yConfig = {
 };
 ```
 
-5. Mintlify automatically loads all `.js` files in your scripts folder. No further config changes are needed.
-
-6. Optional: [Set up the automatic sync](/install/manual#automatic-sync-via-github-action) to keep `do11y.min.js` up to date automatically.
+5. Optional: [Set up the automatic sync](/install/manual#automatic-sync-via-github-action) to keep `do11y.min.js` up to date automatically.
 
 ## Next steps
 

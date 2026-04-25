@@ -10,8 +10,12 @@ Privacy: no cookies, no PII, no device fingerprinting, no cross-site tracking. U
 
 ## Docs
 
-- [Quickstart](https://axiomhq.github.io/do11y/quickstart): Install Do11y on Mintlify, Docusaurus, Nextra, VitePress, or MkDocs Material. Covers CDN setup, self-hosting, the automatic GitHub Action sync, and how to access the integration dashboard.
-- [Reference](https://axiomhq.github.io/do11y/reference): Full reference for configuration options (Axiom connection, behavior, framework, custom selectors), events schema, AI traffic detection fields, and the JavaScript API.
+- [Introduction](https://axiomhq.github.io/do11y/introduction): What Do11y tracks, the privacy model, and supported frameworks.
+- [Prerequisites](https://axiomhq.github.io/do11y/prerequisites): Create an Axiom account, dataset, and ingest-only API token.
+- [Manual setup](https://axiomhq.github.io/do11y/install/manual): CDN and self-hosting instructions for any framework, plus the automatic GitHub Action sync and integration dashboard.
+- [Configuration](https://axiomhq.github.io/do11y/configuration): All configuration options — Axiom connection, behavioral options, framework values, and custom selectors.
+- [APL queries](https://axiomhq.github.io/do11y/queries): Ready-to-run APL queries for traffic, engagement, navigation, content performance, and more.
+- [Reference](https://axiomhq.github.io/do11y/reference): Events schema, AI traffic detection fields, JavaScript API, and known limitations.
 
 ## Optional
 

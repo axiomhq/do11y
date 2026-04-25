@@ -32,7 +32,7 @@ Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credent
 
 ## Advanced configuration
 
-To use options beyond the basic credentials (scroll thresholds, tracking toggles, custom selectors), add a `customScripts` entry that sets `window.Do11yConfig` before the main script loads:
+To use options beyond the basic credentials (scroll thresholds, tracking toggles, custom selectors), add an inline `<script>` entry to `headTags` that sets `window.Do11yConfig` before the main script loads:
 
 ```js
 headTags: [

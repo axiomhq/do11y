@@ -31,13 +31,13 @@ Add the following to the `<Head>` component in `pages/_app.jsx` or `pages/_app.t
 Add the following to `app/layout.jsx` or `app/layout.tsx`:
 
 ```jsx
-<head>
+<Head>
   <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN" />
   <meta name="axiom-do11y-token" content="API_TOKEN" />
   <meta name="axiom-do11y-dataset" content="DATASET_NAME" />
   <meta name="axiom-do11y-framework" content="nextra" />
   <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
-</head>
+</Head>
 ```
 
 Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/prerequisites).
@@ -47,7 +47,7 @@ Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credent
 To use options beyond the basic credentials, add an inline script before the main script tag. The inline script must run before Do11y loads:
 
 ```jsx
-<head>
+<Head>
   <meta name="axiom-do11y-domain" content="AXIOM_DOMAIN" />
   <meta name="axiom-do11y-token" content="API_TOKEN" />
   <meta name="axiom-do11y-dataset" content="DATASET_NAME" />
@@ -58,7 +58,7 @@ To use options beyond the basic credentials, add an inline script before the mai
     }}
   />
   <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js" defer />
-</head>
+</Head>
 ```
 
 See the [configuration reference](/configuration) for all available options.

@@ -41,7 +41,7 @@ Do11y classifies referrer domains to detect traffic from AI platforms. Each `pag
 
 Detection is referrer-based: it checks whether `document.referrer` hostname matches a known AI platform. No fingerprinting, user-agent parsing, or additional data collection.
 
-**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. Those visits appear as `direct` traffic. Referrer-based detection typically captures 20–40% of AI traffic.
+**Limitation:** Most AI platforms (especially ChatGPT mobile and API-sourced visits) don't pass referrer headers. Those visits appear as `direct` traffic. Referrer-based detection typically captures 20–40% of AI traffic. Detecting the remaining "dark AI" traffic would require fingerprinting techniques that conflict with Do11y's privacy-first design.
 
 ## JavaScript API
 

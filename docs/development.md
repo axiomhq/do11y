@@ -20,7 +20,7 @@ The `tests` folder contains multiple layers of testing. Each catches a different
 |---|---|
 | Framework updated a CSS class name (selector drift) | `test-live-sites.ts` |
 | Do11y broken on a specific framework's local dev server | `test-integrations.ts` |
-| Events not reaching Axiom from a real production site | `test-live-e2e.ts` |
+| Events not reaching Axiom from a real production site | `test-e2e-live.ts` |
 
 ### Selector tests against live sites
 
@@ -45,7 +45,7 @@ Sites covered:
 
 ### E2E live-site tests
 
-**`tests/test-live-e2e.ts`** is the only test that proves events reach Axiom from a real site. It injects `do11y.js` into live public documentation sites via Puppeteer's `evaluateOnNewDocument`, drives a realistic user journey, sends events to Axiom, and then queries Axiom to validate that the expected event types arrived.
+**`tests/test-e2e-live.ts`** is the only test that proves events reach Axiom from a real site. It injects `do11y.js` into live public documentation sites via Puppeteer's `evaluateOnNewDocument`, drives a realistic user journey, sends events to Axiom, and then queries Axiom to validate that the expected event types arrived.
 
 ```bash
 cd tests
@@ -99,9 +99,9 @@ Events validated per framework:
 | `scroll_depth` | 1 | |
 | `link_click` | 1 | |
 | `page_exit` | 1 | |
-| `expand_collapse` | 1 | 0 for Nextra (no expandables on test page) |
+| `expand_collapse` | 1 | 0 for Nextra (no documentation-level expandables on test page) |
 | `toc_click` | 1 | |
-| `search_opened` | 0 | Best-effort |
+| `search_opened` | 0 | Best-effort — not all frameworks render search the same way |
 | `code_copied` | 1 | |
 | `feedback` | 0 | 1 for Mintlify and MkDocs Material |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2s dwell |
