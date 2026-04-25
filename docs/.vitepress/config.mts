@@ -38,40 +38,71 @@ export default defineConfig({
 
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Quickstart', link: '/quickstart' },
+      { text: 'Introduction', link: '/introduction' },
+      { text: 'Install', link: '/prerequisites' },
+      { text: 'Queries', link: '/queries' },
       { text: 'Reference', link: '/reference' },
     ],
 
     sidebar: [
       {
-        text: 'Get started',
+        text: 'Overview',
+        collapsed: false,
         items: [
-          { text: 'Introduction', link: '/quickstart#introduction' },
-          { text: 'Prerequisites', link: '/quickstart#prerequisites' },
-          { text: 'Mintlify', link: '/quickstart#mintlify' },
-          { text: 'Docusaurus', link: '/quickstart#docusaurus' },
-          { text: 'Nextra', link: '/quickstart#nextra' },
-          { text: 'VitePress', link: '/quickstart#vitepress' },
-          { text: 'MkDocs Material', link: '/quickstart#mkdocs-material' },
-          { text: 'Manual setup', link: '/quickstart#manual-setup' },
-          { text: 'Integration dashboard', link: '/quickstart#integration-dashboard' },
-        ]
+          { text: 'Introduction', link: '/introduction' },
+          { text: 'What Do11y collects', link: '/introduction#events' },
+          { text: 'Privacy', link: '/introduction#privacy' },
+          { text: 'Supported frameworks', link: '/introduction#supported-frameworks' },
+        ],
+      },
+      {
+        text: 'Get started',
+        collapsed: false,
+        items: [
+          { text: 'Prerequisites', link: '/prerequisites' },
+          { text: 'Mintlify', link: '/install/mintlify' },
+          { text: 'Docusaurus', link: '/install/docusaurus' },
+          { text: 'Nextra', link: '/install/nextra' },
+          { text: 'VitePress', link: '/install/vitepress' },
+          { text: 'MkDocs Material', link: '/install/mkdocs-material' },
+          { text: 'Manual setup', link: '/install/manual' },
+        ],
+      },
+      {
+        text: 'Analyze',
+        collapsed: false,
+        items: [
+          { text: 'Integration dashboard', link: '/integration-dashboard' },
+          { text: 'Example queries', link: '/queries' },
+        ],
+      },
+      {
+        text: 'Configure',
+        collapsed: false,
+        items: [
+          { text: 'Configuration', link: '/configuration' },
+          { text: 'Custom selectors', link: '/configuration#custom-selectors' },
+        ],
       },
       {
         text: 'Reference',
+        collapsed: false,
         items: [
-          { text: 'Configuration', link: '/reference#configuration' },
           { text: 'Events', link: '/reference#events' },
           { text: 'AI traffic detection', link: '/reference#ai-traffic-detection' },
           { text: 'JavaScript API', link: '/reference#javascript-api' },
-        ]
-      }
+          { text: 'Known limitations', link: '/reference#known-limitations' },
+        ],
+      },
+      {
+        text: 'Development',
+        collapsed: false,
+        items: [
+          { text: 'Tests', link: '/development#tests' },
+          { text: 'Create a release', link: '/development#create-a-release' },
+        ],
+      },
     ],
-
-    docFooter: {
-      prev: false,
-      next: false,
-    },
 
     editLink: {
       pattern: 'https://github.com/axiomhq/do11y/edit/main/docs/:path',
