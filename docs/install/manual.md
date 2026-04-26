@@ -28,7 +28,7 @@ Add the following to every page of your docs site:
 
 Replace the meta tag values with your [Axiom credentials](/prerequisites) and your framework name. To pin a specific version, replace `latest` with a version tag like `1.0.0`.
 
-Set `FRAMEWORK` to one of the [supported framework values](/configuration#framework) or `'custom'` if you want to provide your own selectors.
+Set `FRAMEWORK` to one of the [supported framework values](/configuration#framework), or `'custom'` to provide your own selectors.
 
 ### Advanced configuration via CDN
 
