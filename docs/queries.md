@@ -511,7 +511,7 @@ Identify pages where users frequently expand hidden content.
 
 ### Page performance dashboard
 
-Get a comprehensive view of all pages.
+View all page metrics in a single query.
 
 ```apl
 ['do11y']

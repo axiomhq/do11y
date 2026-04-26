@@ -61,7 +61,7 @@ AxiomDo11y.version        // Script version
 
 ### Custom themes
 
-The selectors work on sites using the standard theme of each supported framework. Heavily customized themes may render elements differently. If you use a custom theme, check whether you need to set selectors manually using the [`custom` framework option](/configuration#custom-selectors).
+The selectors work on sites using the standard theme of each supported framework. Heavily customized themes render elements differently. If you use a custom theme, set selectors manually using the [`custom` framework option](/configuration#custom-selectors).
 
 ### Framework selector drift
 

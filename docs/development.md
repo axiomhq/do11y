@@ -24,7 +24,7 @@ The `tests` folder contains multiple layers of testing. Each catches a different
 
 ### Selector tests against live sites
 
-**`tests/test-live-sites.ts`** runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production. It requires no Axiom credentials — its only job is to catch selector drift when a framework ships a DOM update that renames class names.
+**`tests/test-live-sites.ts`** runs headless Chromium via Puppeteer against real documentation sites to validate that selectors match elements in production. It requires no Axiom credentials. Its only job is to catch selector drift when a framework ships a DOM update that renames class names.
 
 ```bash
 cd tests
@@ -101,7 +101,7 @@ Events validated per framework:
 | `page_exit` | 1 | |
 | `expand_collapse` | 1 | 0 for Nextra (no documentation-level expandables on test page) |
 | `toc_click` | 1 | |
-| `search_opened` | 0 | Best-effort — not all frameworks render search the same way |
+| `search_opened` | 0 | Best-effort. Not all frameworks render search the same way. |
 | `code_copied` | 1 | |
 | `feedback` | 0 | 1 for Mintlify and MkDocs Material |
 | `section_visible` | 1 | `sectionVisibleThreshold: 1` + 2s dwell |

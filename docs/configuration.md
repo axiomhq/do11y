@@ -1,13 +1,13 @@
 ---
 title: Configuration
-description: All Do11y configuration options — Axiom connection, behavior, framework, and custom selectors.
+description: All Do11y configuration options, including Axiom connection, behavior, framework, and custom selectors.
 head:
   - - meta
     - property: og:title
       content: Configuration — Do11y
   - - meta
     - property: og:description
-      content: All Do11y configuration options — Axiom connection, behavior, framework, and custom selectors.
+      content: All Do11y configuration options, including Axiom connection, behavior, framework, and custom selectors.
 ---
 
 # Configuration
