@@ -64,7 +64,6 @@ You're now ready to add Do11y to your documentation site. Follow the install gui
 - [Install on Nextra](/install/nextra)
 - [Install on VitePress](/install/vitepress)
 - [Install on MkDocs Material](/install/mkdocs-material)
-- [Install on GitBook](/install/gitbook)
 - [Manual setup for other frameworks](/install/manual)
 
 ## Further reading
