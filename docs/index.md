@@ -15,9 +15,9 @@ hero:
 
 features:
   - title: Agent-native
-    details: Detects AI platform referrers — ChatGPT, Perplexity, Claude, Gemini, Copilot, and others — so you can compare how agents and humans engage with your content.
+    details: Detects AI platform referrers (ChatGPT, Perplexity, Claude, Gemini, Copilot, and others) so you can compare how agents and humans engage with your content.
   - title: Privacy-first
-    details: No cookies, no PII, no device fingerprinting, no cross-site tracking. Uses sessionStorage. You don't need a GDPR consent banner.
+    details: No cookies, no PII, no device fingerprinting, no cross-site tracking. You don't need a GDPR consent banner.
   - title: Zero dependencies
     details: A single dependency-free JavaScript file. Load it from the CDN or self-host. One script tag is all it takes.
   - title: Five frameworks out of the box
@@ -25,5 +25,5 @@ features:
   - title: Rich behavioral events
     details: Page views, scroll depth, link clicks, search queries, code-block copies, section reading time, tab switches, TOC clicks, feedback, and expand/collapse interactions.
   - title: Integration dashboard
-    details: An Axiom dashboard is automatically created when you add Do11y. It shows page views, scroll depth, code copies, reading time, and more — no setup required.
+    details: Axiom automatically creates a dashboard when you start sending Do11y data from your docs site. It shows page views, scroll depth, code copies, reading time, and more, without any additional setup.
 ---

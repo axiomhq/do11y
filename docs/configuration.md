@@ -12,7 +12,7 @@ head:
 
 # Configuration
 
-All options can be set via `window.Do11yConfig` (inline script or a separate config file) or via meta tags. When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
+Set all options via `window.Do11yConfig` using an inline script or a separate config file, or via meta tags. When both are present, meta tags take precedence over `window.Do11yConfig`, which takes precedence over the defaults.
 
 ## Axiom connection
 
@@ -58,9 +58,9 @@ Set `framework` to auto-configure CSS selectors for your documentation platform:
 | `'vitepress'` | [VitePress](https://vitepress.dev) |
 | `'custom'` | Provide your own selectors (see below) |
 
-When `framework` is set to a supported value, Do11y automatically configures the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas.
+When you set `framework` to a supported value, Do11y automatically configures the correct CSS selectors for search bars, copy buttons, code blocks, navigation, footers, and content areas.
 
-You can also set the framework via meta tag:
+You can also set the framework via a meta tag:
 
 ```html
 <meta name="axiom-do11y-framework" content="docusaurus">

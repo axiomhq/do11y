@@ -14,45 +14,43 @@ head:
 
 Before installing Do11y, complete the following steps in Axiom.
 
-## 1. Create an Axiom account
+## Create an Axiom account
 
 [Register a free Axiom account](https://app.axiom.co/register). The free tier is sufficient for the biggest documentation sites.
 
-## 2. Create a dataset
+## Create a dataset
 
 Datasets are collections of related events. Do11y sends all behavioral events to a single dataset you choose.
 
-1. In Axiom, go to **Settings > Datasets and Views**.
-2. Click **New dataset**.
-3. Give the dataset a name. Something like `my-docs` or `docs-observability` works well. The name is used in your Do11y config as `axiomDataset` and appears in the integration dashboard title.
-4. Optionally add a description, then save.
+1. Click ⚙️ **Settings > Datasets and views**.
+1. Click **New dataset**.
+1. Name the dataset, and leave the default settings for the other fields.
+1. Note the dataset name and the **Edge deployment** field.
+1. Click **Save dataset**.
 
-Optional: Leave retention at the default for now. Adjust it later under **Settings > Datasets and Views** by clicking the retention icon next to the dataset.
+## Determine Axiom domain
 
-## 3. Create an API token
+Your Axiom domain is where Do11y sends events. It depends on the edge deployment of the dataset you have just created.
 
-Do11y needs an ingest-only token scoped to the dataset you just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
+| Edge deployment | Axiom domain |
+|---|---|
+| US East 1 (AWS) | `us-east-1.aws.edge.axiom.co` |
+| EU Central 1 (AWS) | `eu-central-1.aws.edge.axiom.co` |
 
-1. Go to **Settings > API Tokens**.
-2. Click **New API token**.
-3. Give the token a name, for example `do11y-my-docs`.
-4. In the **Dataset Access** section, select **Allow ingest access to specific datasets only** and check the dataset you created in step 2.
-5. Leave permissions set to **CanIngest**. Do not add query permissions, as they are not needed and would increase the risk if the token is ever exposed.
-6. Optionally set an expiry date. If you set one, remember to rotate the token before it expires.
-7. Click **Save**. The token value is shown only once. Copy it now. It starts with `xaat-`.
+## Create an API token
 
-## 4. Find your Axiom domain
+Do11y needs an ingest-only token scoped to the dataset you have just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
 
-Your Axiom domain (also called the edge deployment domain) is where Do11y sends events. It looks like `us-east-1.aws.edge.axiom.co`.
+1. Click ⚙️ **Settings > API Tokens**.
+1. Click **New API token**.
+1. Name your API token.
+1. In the **Dataset Access** section, select **Allow ingest access to specific datasets only** and select the dataset you have created for Do11y. Don't select any other datasets.
+1. Click **Create**.
+1. Copy the API token that appears and store it securely. It won’t be displayed again.
 
-1. Go to **Settings > General**.
-2. Find the **Region** field. Your domain is based on the region shown there.
+## Axiom credentials
 
-Alternatively, use the domain from any API call you've made to Axiom. It's the hostname in the URL.
-
-## What you need
-
-You now have the three values required by Do11y:
+You now have the three values from Axiom that Do11y needs:
 
 | Value | Example | Config option |
 |---|---|---|
@@ -60,4 +58,18 @@ You now have the three values required by Do11y:
 | Dataset name | `my-docs` | `axiomDataset` |
 | API token | `xaat-...` | `axiomToken` |
 
-With these in hand, follow the install guide for your documentation framework.
+You're now ready to add Do11y to your documentation site. Follow the install guide for your documentation framework:
+
+- [Install on Docusaurus](/install/docusaurus)
+- [Install on Nextra](/install/nextra)
+- [Install on VitePress](/install/vitepress)
+- [Install on MkDocs Material](/install/mkdocs-material)
+- [Install on GitBook](/install/gitbook)
+- [Manual setup for other frameworks](/install/manual)
+
+## Further reading
+
+To learn more about Axiom, see these pages in the Axiom documentation:
+- [Datasets](https://axiom.co/docs/reference/datasets)
+- [Edge deployments](https://axiom.co/docs/reference/edge-deployments)
+- [API tokens](https://axiom.co/docs/reference/tokens)

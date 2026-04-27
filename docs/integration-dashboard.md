@@ -1,20 +1,20 @@
 ---
 title: Integration dashboard
-description: An integration dashboard is automatically created in Axiom when Do11y starts sending data.
+description: Axiom automatically creates an integration dashboard when you start sending Do11y data from your docs site.
 head:
   - - meta
     - property: og:title
       content: Integration dashboard — Do11y
   - - meta
     - property: og:description
-      content: An integration dashboard is automatically created in Axiom when Do11y starts sending data.
+      content: Axiom automatically creates an integration dashboard when you start sending Do11y data from your docs site.
 ---
 
 # Integration dashboard
 
-An integration dashboard is automatically created in Axiom when Do11y starts sending data. To access it:
+Axiom automatically creates an integration dashboard when you start sending Do11y data from your docs site. To access the dashboard:
 
 1. In Axiom, click **Dashboards**.
 2. In the **Integrations** section, click **Documentation observability (Do11y) (DATASET_NAME)**.
 
-Or go directly to `https://app.axiom.co/ORG_ID/dashboards/do11y.DATASET_NAME`.
+Alternatively, go directly to `https://app.axiom.co/ORG_ID/dashboards/do11y.DATASET_NAME`.

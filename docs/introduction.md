@@ -16,7 +16,7 @@ Do11y is a documentation observability solution from [Axiom](https://axiom.co). 
 
 Do11y is built for humans and machines alike. It emits observability data that is easy to read in the Axiom UI and easy to query programmatically.
 
-Do11y is agent-native. In an era where AI assistants and autonomous agents increasingly read and cite documentation alongside human users, Do11y detects AI platform referrers so you can understand how agents and humans engage with your content differently.
+Do11y is agent-native. It detects AI platform referrers so you can understand how agents and humans engage with your content differently.
 
 The runtime artifact is a single dependency-free JavaScript file built from TypeScript with [rolldown](https://rolldown.rs). Load it from a CDN or self-host it.
 
