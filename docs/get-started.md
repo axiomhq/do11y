@@ -15,10 +15,10 @@ head:
 Set up Do11y by following these steps in Axiom and your documentation site:
 
 1. Get Axiom credentials
-    - Create Axiom account
-    - Create dataset
-    - Create API token
-1. Add Do11y to your documentation site
+    - [Create Axiom account](#create-axiom-account)
+    - [Create dataset](#create-dataset)
+    - [Create API token](#create-api-token)
+1. [Add Do11y to your documentation site](#add-do11y-to-your-documentation-site)
 
 ## Create Axiom account
 
@@ -26,9 +26,9 @@ Set up Do11y by following these steps in Axiom and your documentation site:
 
 ## Create dataset
 
-Datasets are collections of related events. Do11y sends all behavioral events to a single dataset you choose.
+Datasets are collections of related events. Do11y sends all behavioral events to the dataset you create in Axiom.
 
-1. Click ⚙️ **Settings > Datasets and views**.
+1. In Axiom, click ⚙️ **Settings > Datasets and views**.
 1. Click **New dataset**.
 1. Name the dataset, and leave the default settings for the other fields.
 1. Note the dataset name and the **Edge deployment** field.
@@ -45,9 +45,9 @@ Your Axiom domain is where Do11y sends events. It depends on the edge deployment
 
 ## Create API token
 
-Do11y needs an ingest-only token scoped to the dataset you have just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
+Create an ingest-only token scoped to the dataset you have just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
 
-1. Click ⚙️ **Settings > API Tokens**.
+1. In Axiom, click ⚙️ **Settings > API Tokens**.
 1. Click **New API token**.
 1. Name your API token.
 1. In the **Dataset Access** section, select **Allow ingest access to specific datasets only** and select the dataset you have created for Do11y. Don't select any other datasets.
@@ -68,11 +68,11 @@ You now have the three values from Axiom that Do11y needs:
 
 You're now ready to add Do11y to your documentation site. Follow the install guide for your documentation framework:
 
-- [Install on Docusaurus](/install/docusaurus)
-- [Install on Nextra](/install/nextra)
-- [Install on VitePress](/install/vitepress)
-- [Install on MkDocs Material](/install/mkdocs-material)
-- [Manual setup for other frameworks](/install/manual)
+- [Docusaurus](/install/docusaurus)
+- [Nextra](/install/nextra)
+- [VitePress](/install/vitepress)
+- [MkDocs Material](/install/mkdocs-material)
+- [Other frameworks](/install/manual)
 
 ## Further reading
 
