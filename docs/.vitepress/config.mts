@@ -1,17 +1,20 @@
 import { defineConfig } from 'vitepress'
 
-const SITE_URL = 'https://axiomhq.github.io/do11y'
-const OG_IMAGE = `${SITE_URL}/og-image.png`
+const BASE_URL = 'https://docservable.com'
+const PATH = '/'
+
+const SITE_URL = `${BASE_URL}${PATH}`
+const OG_IMAGE = `${SITE_URL}og-image.png`
 
 export default defineConfig({
-  base: '/do11y/',
+  base: PATH,
   title: "Do11y",
   description: "Documentation observability for Axiom. Stream behavioral events from your docs site in real time.",
   sitemap: {
-    hostname: `${SITE_URL}/`,
+    hostname: `${SITE_URL}`,
   },
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/do11y/logo-dark.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${PATH}logo-dark.svg` }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'Do11y' }],
     ['meta', { property: 'og:image', content: OG_IMAGE }],
