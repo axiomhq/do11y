@@ -68,6 +68,7 @@ You now have the three values from Axiom that Do11y needs:
 
 You're now ready to add Do11y to your documentation site. Follow the install guide for your documentation framework:
 
+- [Mintlify](/install/mintlify)
 - [Docusaurus](/install/docusaurus)
 - [Nextra](/install/nextra)
 - [VitePress](/install/vitepress)
