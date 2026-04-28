@@ -28,7 +28,7 @@ scripts: [
 ],
 ```
 
-Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/prerequisites).
+Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/get-started).
 
 ## Advanced configuration
 

@@ -10,12 +10,12 @@ Privacy: no cookies, no PII, no device fingerprinting, no cross-site tracking. U
 
 ## Docs
 
-- [Introduction](https://axiomhq.github.io/do11y/introduction): What Do11y tracks, the privacy model, and supported frameworks.
-- [Prerequisites](https://axiomhq.github.io/do11y/prerequisites): Create an Axiom account, dataset, and ingest-only API token.
-- [Manual setup](https://axiomhq.github.io/do11y/install/manual): CDN and self-hosting instructions for any framework, plus the automatic GitHub Action sync and integration dashboard.
-- [Configuration](https://axiomhq.github.io/do11y/configuration): All configuration options — Axiom connection, behavioral options, framework values, and custom selectors.
-- [APL queries](https://axiomhq.github.io/do11y/queries): Ready-to-run APL queries for traffic, engagement, navigation, content performance, and more.
-- [Reference](https://axiomhq.github.io/do11y/reference): Events schema, AI traffic detection fields, JavaScript API, and known limitations.
+- [Introduction](https://docservable.com/introduction): What Do11y tracks, the privacy model, and supported frameworks.
+- [Prerequisites](https://docservable.com/get-started): Create an Axiom account, dataset, and ingest-only API token.
+- [Manual setup](https://docservable.com/install/manual): CDN and self-hosting instructions for any framework, plus the automatic GitHub Action sync and integration dashboard.
+- [Configuration](https://docservable.com/configuration): All configuration options — Axiom connection, behavioral options, framework values, and custom selectors.
+- [APL queries](https://docservable.com/queries): Ready-to-run APL queries for traffic, engagement, navigation, content performance, and more.
+- [Reference](https://docservable.com/reference): Events schema, AI traffic detection fields, JavaScript API, and known limitations.
 
 ## Optional
 

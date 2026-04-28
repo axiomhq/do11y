@@ -26,7 +26,7 @@ Add the following to every page of your docs site:
 <script src="https://cdn.jsdelivr.net/npm/@axiomhq/do11y@latest/dist/do11y.min.js"></script>
 ```
 
-Replace the meta tag values with your [Axiom credentials](/prerequisites) and your framework name. To pin a specific version, replace `latest` with a version tag like `1.0.0`.
+Replace the meta tag values with your [Axiom credentials](/get-started) and your framework name. To pin a specific version, replace `latest` with a version tag like `1.0.0`.
 
 Set `FRAMEWORK` to one of the [supported framework values](/configuration#framework), or `'custom'` to provide your own selectors.
 

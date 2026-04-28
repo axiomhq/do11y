@@ -15,6 +15,7 @@ export default defineConfig({
   },
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${PATH}logo-dark.svg` }],
+    ['link', { rel: 'icon', type: 'image/x-icon', href: `${PATH}favicon.ico` }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'Do11y' }],
     ['meta', { property: 'og:image', content: OG_IMAGE }],
@@ -42,8 +43,8 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Introduction', link: '/introduction' },
-      { text: 'Install', link: '/prerequisites' },
-      { text: 'Queries', link: '/queries' },
+      { text: 'Install', link: '/get-started' },
+      { text: 'Analyze', link: '/integration-dashboard' },
       { text: 'Reference', link: '/reference' },
     ],
 
@@ -59,10 +60,10 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Get started',
+        text: 'Install',
         collapsed: false,
         items: [
-          { text: 'Prerequisites', link: '/prerequisites' },
+          { text: 'Get started', link: '/get-started' },
           { text: 'Mintlify', link: '/install/mintlify' },
           { text: 'Docusaurus', link: '/install/docusaurus' },
           { text: 'Nextra', link: '/install/nextra' },

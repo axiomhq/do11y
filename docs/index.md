@@ -8,9 +8,12 @@ hero:
   actions:
     - theme: brand
       text: Get started
-      link: /quickstart
+      link: /get-started
     - theme: alt
-      text: Configuration reference
+      text: Analyze
+      link: /integration-dashboard
+    - theme: alt
+      text: Reference
       link: /reference
 
 features:

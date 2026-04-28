@@ -1,24 +1,30 @@
 ---
-title: Prerequisites
+title: Get started
 description: Set up an Axiom account, dataset, and API token before installing Do11y.
 head:
   - - meta
     - property: og:title
-      content: Prerequisites — Do11y
+      content: Get started — Do11y
   - - meta
     - property: og:description
       content: Set up an Axiom account, dataset, and API token before installing Do11y.
 ---
 
-# Prerequisites
+# Get started
 
-Before installing Do11y, complete the following steps in Axiom.
+Set up Do11y by following these steps in Axiom and your documentation site:
 
-## Create an Axiom account
+1. Get Axiom credentials
+    - Create Axiom account
+    - Create dataset
+    - Create API token
+1. Add Do11y to your documentation site
+
+## Create Axiom account
 
 [Register a free Axiom account](https://app.axiom.co/register). The free tier is sufficient for the biggest documentation sites.
 
-## Create a dataset
+## Create dataset
 
 Datasets are collections of related events. Do11y sends all behavioral events to a single dataset you choose.
 
@@ -37,7 +43,7 @@ Your Axiom domain is where Do11y sends events. It depends on the edge deployment
 | US East 1 (AWS) | `us-east-1.aws.edge.axiom.co` |
 | EU Central 1 (AWS) | `eu-central-1.aws.edge.axiom.co` |
 
-## Create an API token
+## Create API token
 
 Do11y needs an ingest-only token scoped to the dataset you have just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
 
@@ -58,6 +64,8 @@ You now have the three values from Axiom that Do11y needs:
 | Dataset name | `my-docs` | `axiomDataset` |
 | API token | `xaat-...` | `axiomToken` |
 
+## Add Do11y to your documentation site
+
 You're now ready to add Do11y to your documentation site. Follow the install guide for your documentation framework:
 
 - [Install on Docusaurus](/install/docusaurus)
@@ -69,6 +77,7 @@ You're now ready to add Do11y to your documentation site. Follow the install gui
 ## Further reading
 
 To learn more about Axiom, see these pages in the Axiom documentation:
+
 - [Datasets](https://axiom.co/docs/reference/datasets)
 - [Edge deployments](https://axiom.co/docs/reference/edge-deployments)
 - [API tokens](https://axiom.co/docs/reference/tokens)

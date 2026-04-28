@@ -40,7 +40,7 @@ Create `overrides/main.html` to inject the configuration meta tags:
 {% endblock %}
 ```
 
-Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/prerequisites).
+Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/get-started).
 
 See the [MkDocs Material docs](https://squidfunk.github.io/mkdocs-material/customization/#extending-the-theme) for more on theme overrides.
 

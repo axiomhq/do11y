@@ -33,6 +33,8 @@ window.Do11yConfig = {
 };
 ```
 
+Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credentials](/prerequisites).
+
 5. Optional: [Set up the automatic sync](/install/manual#automatic-sync-via-github-action) to keep `do11y.min.js` up to date automatically.
 
 ## Next steps
