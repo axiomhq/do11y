@@ -39,6 +39,6 @@ Replace `AXIOM_DOMAIN`, `API_TOKEN`, and `DATASET_NAME` with your [Axiom credent
 
 ## Next steps
 
-- [Access the integration dashboard](/install/manual#integration-dashboard)
+- [Analyze data in the integration dashboard](/integration-dashboard)
 - [Query your data](/queries)
 - [Advanced configuration](/configuration)

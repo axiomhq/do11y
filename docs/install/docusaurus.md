@@ -55,6 +55,6 @@ See the [configuration reference](/configuration) for all available options.
 
 ## Next steps
 
-- [Access the integration dashboard](/install/manual#integration-dashboard)
+- [Analyze data in the integration dashboard](/integration-dashboard)
 - [Query your data](/queries)
 - [Advanced configuration](/configuration)
