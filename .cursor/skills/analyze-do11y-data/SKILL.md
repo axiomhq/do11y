@@ -1,9 +1,9 @@
 ---
 name: analyze-do11y-data
-description: Query and interpret documentation analytics data collected by do11y. Use when asked to analyze docs performance, find pages to improve, interpret engagement metrics, investigate user behavior, audit instrumentation quality, or produce optimization recommendations from do11y data.
+description: Query and interpret documentation analytics data collected by Do11y. Use when asked to analyze docs performance, find pages to improve, interpret engagement metrics, investigate user behavior, audit instrumentation quality, or produce optimization recommendations from Do11y data.
 ---
 
-# Analyze do11y data
+# Analyze Do11y data
 
 ## Setup
 
@@ -216,7 +216,7 @@ Organize output into these sections:
 7. **Prioritised actions**:
    - **Immediate** — content changes (copy, navigation, structure)
    - **Short-term** — redirects and routing fixes
-   - **Instrumentation** — do11y tracking gaps
+   - **Instrumentation** — Do11y tracking gaps
 
 For each finding, cite the specific pages affected, the metric values vs threshold, and a concrete change linked to the page's file path in the docs repo where possible.
 

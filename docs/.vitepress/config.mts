@@ -77,6 +77,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Integration dashboard', link: '/integration-dashboard' },
+          { text: 'Audit docs with AI agent', link: '/audit' },
           { text: 'Example queries', link: '/queries' },
         ],
       },
