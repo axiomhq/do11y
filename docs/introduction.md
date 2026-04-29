@@ -37,6 +37,8 @@ Do11y streams the following behavioral events:
 | Feedback | "Was this helpful?" widget responses. |
 | Expand/collapse | Interactions with `<details>` elements and accordions. |
 
+These events are specific to how documentation is used. Knowing which sections users actually read, which code examples they copy, and where they stop engaging gives you signal that general web analytics tools don't surface.
+
 ## Privacy
 
 Do11y collects anonymous usage data with no impact on user privacy:
@@ -46,7 +48,7 @@ Do11y collects anonymous usage data with no impact on user privacy:
 - No device fingerprinting.
 - No cross-site tracking.
 
-You don't need a GDPR consent banner for using Do11y.
+Because Do11y uses no cookies and collects no personal data, it doesn't trigger consent requirements under GDPR's cookie rules or CCPA's personal information provisions. You usually don't need a GDPR consent banner for using Do11y. If your organization has specific compliance obligations, verify with your legal team.
 
 ## Supported frameworks
 

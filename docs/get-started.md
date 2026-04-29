@@ -45,7 +45,7 @@ Your Axiom domain is where Do11y sends events. It depends on the edge deployment
 
 ## Create API token
 
-Create an ingest-only token scoped to the dataset you have just created. Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts.
+Create an ingest-only token scoped to the dataset you have just created.
 
 1. In Axiom, click ⚙️ **Settings > API Tokens**.
 1. Click **New API token**.
@@ -53,6 +53,12 @@ Create an ingest-only token scoped to the dataset you have just created. Ingest-
 1. In the **Dataset Access** section, select **Allow ingest access to specific datasets only** and select the dataset you have created for Do11y. Don't select any other datasets.
 1. Click **Create**.
 1. Copy the API token that appears and store it securely. It won’t be displayed again.
+
+<details>
+<summary>Are ingest-only tokens safe to embed in client-side scripts?</summary>
+
+Ingest-only tokens can write data but cannot read it, which makes them safe to embed in client-side scripts. If someone finds your token in the page source, they can write events to your Do11y dataset but cannot read your data, access other datasets, or do anything else in your Axiom account. The worst-case outcome is noise in a single analytics dataset.
+</details>
 
 ## Axiom credentials
 
